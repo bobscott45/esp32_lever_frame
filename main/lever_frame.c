@@ -68,9 +68,13 @@ lv_obj_t *lever_system_create(lv_obj_t *parent, const lever_system_config_t *con
     lv_obj_set_style_bg_color(content, lv_color_hex(0x121212), 0);
     lv_obj_set_style_bg_opa(content, LV_OPA_COVER, 0);
     
-    // Disable slide animation between tabs to prevent full-screen LCD DMA tearing
-    lv_obj_set_style_anim_duration(tv, 0, 0);
-    lv_obj_set_style_anim_duration(content, 0, 0);
+    // Enable slow slide animation (500ms) to spread rendering load over many frames, preventing DMA starvation jitter
+    lv_obj_set_style_anim_duration(tv, 500, 0);
+    lv_obj_set_style_anim_duration(content, 500, 0);
+
+    // Disable touch swiping/scrolling on the tabview content to prevent screen breakup
+    lv_obj_remove_flag(content, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_scrollbar_mode(content, LV_SCROLLBAR_MODE_OFF);
 
     // Style the Tab Bar container
     lv_obj_t *tab_bar = lv_tabview_get_tab_bar(tv);
@@ -91,6 +95,10 @@ lv_obj_t *lever_system_create(lv_obj_t *parent, const lever_system_config_t *con
         // Style tab page background
         lv_obj_set_style_bg_color(tab, lv_color_hex(0x121212), 0);
         lv_obj_set_style_bg_opa(tab, LV_OPA_COVER, 0);
+
+        // Disable scrolling on individual tab pages to prevent swiping/gestures
+        lv_obj_remove_flag(tab, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_scrollbar_mode(tab, LV_SCROLLBAR_MODE_OFF);
         
         // Create the lever frame inside this tab
         lv_obj_t *frame = lever_frame_create(tab);
