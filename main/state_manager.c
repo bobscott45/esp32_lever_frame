@@ -36,23 +36,44 @@ static void iterate_levers(lv_obj_t *wrapper, uint8_t *states, bool apply) {
             
             lv_obj_t *sw = lv_obj_get_child(switch_group, 1);
             if (!sw) continue;
+            lv_obj_t *collar_btn = lv_obj_get_child(l_wrapper, 1);
+            if (!collar_btn) continue;
+            
+            int sw_bit_idx = lever_idx * 2;
+            int lock_bit_idx = lever_idx * 2 + 1;
             
             if (apply) {
                 // Apply state
-                bool is_reversed = (states[lever_idx / 8] & (1 << (lever_idx % 8))) != 0;
+                bool is_reversed = (states[sw_bit_idx / 8] & (1 << (sw_bit_idx % 8))) != 0;
+                bool is_locked = (states[lock_bit_idx / 8] & (1 << (lock_bit_idx % 8))) != 0;
+                
                 if (is_reversed) {
                     lv_obj_add_state(sw, LV_STATE_CHECKED);
                 } else {
                     lv_obj_clear_state(sw, LV_STATE_CHECKED);
                 }
+                
+                if (is_locked) {
+                    lv_obj_add_state(collar_btn, LV_STATE_CHECKED);
+                } else {
+                    lv_obj_clear_state(collar_btn, LV_STATE_CHECKED);
+                }
+                
                 // Send an event so the switch UI updates, but use a custom code to avoid infinite save loops
                 lv_obj_send_event(sw, LV_EVENT_REFRESH, NULL);
+                lv_obj_send_event(collar_btn, LV_EVENT_REFRESH, NULL);
             } else {
                 // Save state
                 if (lv_obj_has_state(sw, LV_STATE_CHECKED)) {
-                    states[lever_idx / 8] |= (1 << (lever_idx % 8));
+                    states[sw_bit_idx / 8] |= (1 << (sw_bit_idx % 8));
                 } else {
-                    states[lever_idx / 8] &= ~(1 << (lever_idx % 8));
+                    states[sw_bit_idx / 8] &= ~(1 << (sw_bit_idx % 8));
+                }
+                
+                if (lv_obj_has_state(collar_btn, LV_STATE_CHECKED)) {
+                    states[lock_bit_idx / 8] |= (1 << (lock_bit_idx % 8));
+                } else {
+                    states[lock_bit_idx / 8] &= ~(1 << (lock_bit_idx % 8));
                 }
             }
             lever_idx++;
@@ -82,11 +103,11 @@ void state_manager_load_and_apply(lv_obj_t *system_wrapper, uint32_t current_con
     }
     
     size_t required_size = 0;
-    err = nvs_get_blob(my_handle, "lever_states", NULL, &required_size);
+    err = nvs_get_blob(my_handle, "lever_st_v2", NULL, &required_size);
     if (err == ESP_OK && required_size > 0) {
         uint8_t *states = calloc(1, required_size);
         if (states) {
-            nvs_get_blob(my_handle, "lever_states", states, &required_size);
+            nvs_get_blob(my_handle, "lever_st_v2", states, &required_size);
             ESP_LOGI(TAG, "Restoring %d bytes of lever state from NVS...", required_size);
             iterate_levers(system_wrapper, states, true);
             free(states);
@@ -112,7 +133,7 @@ void state_manager_save(lv_obj_t *system_wrapper, uint32_t current_config_hash) 
         total_levers += lv_obj_get_child_cnt(frame);
     }
     
-    int bytes_needed = (total_levers + 7) / 8;
+    int bytes_needed = (total_levers * 2 + 7) / 8;
     if (bytes_needed == 0) return;
     
     uint8_t *states = calloc(1, bytes_needed);
@@ -124,7 +145,7 @@ void state_manager_save(lv_obj_t *system_wrapper, uint32_t current_config_hash) 
     esp_err_t err = nvs_open("storage", NVS_READWRITE, &my_handle);
     if (err == ESP_OK) {
         nvs_set_u32(my_handle, "cfg_hash", current_config_hash);
-        nvs_set_blob(my_handle, "lever_states", states, bytes_needed);
+        nvs_set_blob(my_handle, "lever_st_v2", states, bytes_needed);
         nvs_commit(my_handle);
         nvs_close(my_handle);
         ESP_LOGI(TAG, "Lever state automatically saved to NVS.");

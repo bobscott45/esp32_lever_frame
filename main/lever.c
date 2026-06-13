@@ -6,6 +6,8 @@
 #include "display/lv_display.h"
 #include "lever_frame.h"
 #include <string.h>
+#include "state_manager.h"
+#include "config_manager.h"
 
 
 
@@ -20,6 +22,14 @@ static void collar_btn_event_cb(lv_event_t * e) {
     
     // Defer all UI state logic to the centralized lock UI updater
     lever_update_system_lock_ui(sw);
+    
+    lv_obj_t *frame = lv_obj_get_parent(wrapper);
+    lv_obj_t *tab = lv_obj_get_parent(frame);
+    lv_obj_t *content = lv_obj_get_parent(tab);
+    lv_obj_t *tv = lv_obj_get_parent(content);
+    lv_obj_t *system_wrapper = lv_obj_get_parent(tv);
+    
+    state_manager_save(system_wrapper, config_manager_get_hash());
 }
 
 static bool interlocking_check(lv_obj_t *sw, bool target_state_thrown) {
@@ -152,9 +162,6 @@ static void lever_switch_refresh_cb(lv_event_t * e) {
         lv_obj_set_style_text_color(thrown_label, lv_color_hex(0x888888), LV_PART_MAIN);
     }
 }
-
-#include "state_manager.h"
-#include "config_manager.h"
 
 static void lever_switch_event_cb(lv_event_t * e) {
     lever_switch_refresh_cb(e);
