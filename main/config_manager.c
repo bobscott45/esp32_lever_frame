@@ -53,12 +53,27 @@ static const tab_def_t default_tabs[] = {
 
 static const lever_system_config_t default_config = {
     .tabs = default_tabs,
-    .tab_count = sizeof(default_tabs) / sizeof(default_tabs[0])
+    .tab_count = sizeof(default_tabs) / sizeof(default_tabs[0]),
+    .restore_last_state = true
 };
 
 // Currently active dynamic configuration
 static lever_system_config_t active_dynamic_config = {0};
 static bool is_using_dynamic = false;
+static uint32_t active_config_hash = 0;
+
+static uint32_t hash_json_string(const char *str) {
+    uint32_t hash = 5381;
+    int c;
+    while ((c = *str++)) {
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+    }
+    return hash;
+}
+
+uint32_t config_manager_get_hash(void) {
+    return active_config_hash;
+}
 
 // Configuration change callback
 static config_change_cb_t on_config_change = NULL;
@@ -213,6 +228,13 @@ static esp_err_t parse_json_to_config(const char *json_str, lever_system_config_
         out_config->wifi_password = NULL;
     }
     
+    cJSON *restore_obj = cJSON_GetObjectItem(root, "restore_last_state");
+    if (restore_obj && cJSON_IsBool(restore_obj)) {
+        out_config->restore_last_state = cJSON_IsTrue(restore_obj);
+    } else {
+        out_config->restore_last_state = true;
+    }
+    
     cJSON_Delete(root);
     return ESP_OK;
 
@@ -273,15 +295,26 @@ esp_err_t config_manager_init(void) {
 
     ESP_LOGI(TAG, "Loading saved config from NVS...");
     lever_system_config_t new_config = {0};
+    
+    // Calculate hash before parsing and freeing
+    uint32_t loaded_hash = hash_json_string(json_buf);
+    
     err = parse_json_to_config(json_buf, &new_config);
     free(json_buf);
 
     if (err == ESP_OK) {
         active_dynamic_config = new_config;
         is_using_dynamic = true;
+        active_config_hash = loaded_hash;
         ESP_LOGI(TAG, "Successfully loaded dynamic config from NVS.");
     } else {
         ESP_LOGE(TAG, "Saved JSON config was invalid. Using default config instead.");
+    }
+
+    if (!is_using_dynamic) {
+        char *json = config_manager_get_json_str();
+        active_config_hash = hash_json_string(json);
+        free(json);
     }
 
     return ESP_OK;
@@ -329,6 +362,7 @@ esp_err_t config_manager_save_json(const char *json_str) {
     }
     active_dynamic_config = new_config;
     is_using_dynamic = true;
+    active_config_hash = hash_json_string(json_str);
 
     ESP_LOGI(TAG, "Dynamic configuration updated and saved to NVS.");
 
@@ -373,6 +407,8 @@ char *config_manager_get_json_str(void) {
     } else {
         cJSON_AddStringToObject(root, "wifi_password", "signalman"); // Default
     }
+    
+    cJSON_AddBoolToObject(root, "restore_last_state", curr->restore_last_state);
     
     cJSON *tabs_arr = cJSON_CreateArray();
     cJSON_AddItemToObject(root, "tabs", tabs_arr);

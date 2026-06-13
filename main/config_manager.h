@@ -20,6 +20,12 @@ esp_err_t config_manager_init(void);
 const lever_system_config_t *config_manager_get_current(void);
 
 /**
+ * @brief Get the fingerprint hash of the active configuration to detect changes.
+ * @return 32-bit hash
+ */
+uint32_t config_manager_get_hash(void);
+
+/**
  * @brief Save a new JSON configuration string to NVS and apply it.
  * @param json_str The raw JSON string
  * @return ESP_OK on success, or error code

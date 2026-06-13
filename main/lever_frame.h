@@ -30,6 +30,7 @@ typedef struct {
     const tab_def_t *tabs;
     size_t tab_count;
     const char *wifi_password;
+    bool restore_last_state;
 } lever_system_config_t;
 
 /**

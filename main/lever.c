@@ -137,29 +137,44 @@ void lever_frame_update_system_locks(lv_obj_t *frame) {
     }
 }
 
-static void lever_switch_event_cb(lv_event_t * e) {
+static void lever_switch_refresh_cb(lv_event_t * e) {
     lv_obj_t * sw = lv_event_get_target(e);
     bool is_thrown = lv_obj_has_state(sw, LV_STATE_CHECKED);
-    
     lv_obj_t * switch_group = lv_obj_get_parent(sw);
     lv_obj_t * normal_label = lv_obj_get_child(switch_group, 0);
     lv_obj_t * thrown_label = lv_obj_get_child(switch_group, 2);
 
     if(is_thrown) {
-        // Thrown state
         lv_obj_set_style_text_color(normal_label, lv_color_hex(0x888888), LV_PART_MAIN);
         lv_obj_set_style_text_color(thrown_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
     } else {
-        // Normal state
         lv_obj_set_style_text_color(normal_label, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
         lv_obj_set_style_text_color(thrown_label, lv_color_hex(0x888888), LV_PART_MAIN);
     }
+}
+
+#include "state_manager.h"
+#include "config_manager.h"
+
+static void lever_switch_event_cb(lv_event_t * e) {
+    lever_switch_refresh_cb(e);
+    
+    lv_obj_t * sw = lv_event_get_target(e);
+    lv_obj_t * switch_group = lv_obj_get_parent(sw);
+    lv_obj_t * container = lv_obj_get_parent(switch_group);
+    lv_obj_t * wrapper = lv_obj_get_parent(container);
+    lv_obj_t * frame = lv_obj_get_parent(wrapper);
     
     // Update all levers in this frame to reflect new dependencies
-    lv_obj_t *container = lv_obj_get_parent(switch_group);
-    lv_obj_t *wrapper = lv_obj_get_parent(container);
-    lv_obj_t *frame = lv_obj_get_parent(wrapper);
     lever_frame_update_system_locks(frame);
+    
+    // Save state to NVS
+    lv_obj_t *tab = lv_obj_get_parent(frame);
+    lv_obj_t *content = lv_obj_get_parent(tab);
+    lv_obj_t *tv = lv_obj_get_parent(content);
+    lv_obj_t *system_wrapper = lv_obj_get_parent(tv);
+    
+    state_manager_save(system_wrapper, config_manager_get_hash());
 }
 
 static lv_obj_t *container_create(lv_obj_t *parent) {
@@ -427,6 +442,7 @@ lv_obj_t *lever_create(lv_obj_t *parent, const char *label_text, lever_type_t ty
     
     // Add event callback to toggle highlight on switch toggle
     lv_obj_add_event_cb(sw, lever_switch_event_cb, LV_EVENT_VALUE_CHANGED, NULL);
+    lv_obj_add_event_cb(sw, lever_switch_refresh_cb, LV_EVENT_REFRESH, NULL);
     
     return wrapper;
 }

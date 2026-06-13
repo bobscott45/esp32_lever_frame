@@ -520,13 +520,20 @@
                 <div class="card-header">
                     <div class="card-title">System Settings</div>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr; gap: 15px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                     <div>
                         <label for="wifi-password-input">Config Wi-Fi Password (WPA2)</label>
                         <div style="position: relative;">
                             <input type="password" id="wifi-password-input" oninput="updateWifiPassword(this.value)">
                             <button type="button" onclick="togglePasswordVisibility()" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px;">👁</button>
                         </div>
+                    </div>
+                    <div>
+                        <label for="startup-mode-select">Startup Mode</label>
+                        <select id="startup-mode-select" onchange="updateStartupMode(this.value)">
+                            <option value="true">Restore Last State</option>
+                            <option value="false">Safe Default State</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -609,6 +616,11 @@
         // Fetch current config on load
         window.addEventListener('DOMContentLoaded', () => {
             fetchConfig();
+            
+            // Keep-alive heartbeat so the ESP32 knows we are still configuring
+            setInterval(async () => {
+                try { await fetch('/api/ping'); } catch(e) {}
+            }, 2000);
         });
 
         function showToast(message, type = 'success') {
@@ -710,6 +722,10 @@
             }, 100);
 
             document.getElementById('wifi-password-input').value = configData.wifi_password || 'signalman';
+            const restoreSelect = document.getElementById('startup-mode-select');
+            if (restoreSelect) {
+                restoreSelect.value = configData.restore_last_state === false ? "false" : "true";
+            }
 
             if (!currentTab.levers || currentTab.levers.length === 0) {
                 noLeversMsg.style.display = 'block';
@@ -907,6 +923,11 @@
 
         function updateWifiPassword(value) {
             configData.wifi_password = value;
+            checkChanges();
+        }
+
+        function updateStartupMode(val) {
+            configData.restore_last_state = (val === 'true');
             checkChanges();
         }
 

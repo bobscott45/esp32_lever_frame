@@ -12,13 +12,17 @@ static const char *TAG = "WebServer";
 static httpd_handle_t server = NULL;
 static esp_netif_t *ap_netif = NULL;
 
-// ASM symbols for embedded index.html
-extern const uint8_t index_html_start[] asm("_binary_index_html_start");
-extern const uint8_t index_html_end[] asm("_binary_index_html_end");
+// ASM symbols for embedded index.html.gz
+extern const uint8_t index_html_start[] asm("_binary_index_html_gz_start");
+extern const uint8_t index_html_end[] asm("_binary_index_html_gz_end");
+
+extern void ui_show_remote_config_overlay(void);
 
 static esp_err_t root_get_handler(httpd_req_t *req) {
-    ESP_LOGI(TAG, "Serving /index.html");
+    ESP_LOGI(TAG, "Serving /index.html (gzipped)");
+    ui_show_remote_config_overlay();
     httpd_resp_set_type(req, "text/html");
+    httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
     httpd_resp_set_hdr(req, "Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
     httpd_resp_set_hdr(req, "Pragma", "no-cache");
     httpd_resp_send(req, (const char *)index_html_start, index_html_end - index_html_start);
@@ -27,6 +31,7 @@ static esp_err_t root_get_handler(httpd_req_t *req) {
 
 static esp_err_t api_config_get_handler(httpd_req_t *req) {
     ESP_LOGI(TAG, "GET /api/config");
+    ui_show_remote_config_overlay();
     char *json_str = config_manager_get_json_str();
     if (!json_str) {
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to get config string");
@@ -40,8 +45,17 @@ static esp_err_t api_config_get_handler(httpd_req_t *req) {
     return ESP_OK;
 }
 
+static esp_err_t api_ping_get_handler(httpd_req_t *req) {
+    ui_show_remote_config_overlay();
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_sendstr(req, "{\"status\":\"ok\"}");
+    return ESP_OK;
+}
+
 static esp_err_t api_config_post_handler(httpd_req_t *req) {
     ESP_LOGI(TAG, "POST /api/config");
+    ui_show_remote_config_overlay();
     int total_len = req->content_len;
     int cur_len = 0;
 
@@ -122,6 +136,13 @@ static const httpd_uri_t api_config_post_uri = {
     .user_ctx  = NULL
 };
 
+static const httpd_uri_t api_ping_get_uri = {
+    .uri       = "/api/ping",
+    .method    = HTTP_GET,
+    .handler   = api_ping_get_handler,
+    .user_ctx  = NULL
+};
+
 static httpd_handle_t start_webserver(void) {
     httpd_handle_t server_handle = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
@@ -134,6 +155,7 @@ static httpd_handle_t start_webserver(void) {
         httpd_register_uri_handler(server_handle, &index_uri);
         httpd_register_uri_handler(server_handle, &api_config_get_uri);
         httpd_register_uri_handler(server_handle, &api_config_post_uri);
+        httpd_register_uri_handler(server_handle, &api_ping_get_uri);
         return server_handle;
     }
 

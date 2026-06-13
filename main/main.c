@@ -9,6 +9,46 @@
 static const char *TAG = "main";
 static lv_obj_t *system_tabview = NULL;
 
+static lv_obj_t *remote_config_overlay = NULL;
+static lv_timer_t *remote_config_timer = NULL;
+
+static void remote_config_timeout_cb(lv_timer_t *timer) {
+    if (remote_config_overlay) {
+        lv_obj_del(remote_config_overlay);
+        remote_config_overlay = NULL;
+    }
+    remote_config_timer = NULL;
+}
+
+void ui_show_remote_config_overlay(void) {
+    if (lvgl_port_lock(0)) {
+        if (!remote_config_overlay) {
+            remote_config_overlay = lv_obj_create(lv_scr_act());
+            lv_obj_set_size(remote_config_overlay, LV_PCT(100), LV_PCT(100));
+            lv_obj_set_style_bg_color(remote_config_overlay, lv_color_hex(0x000000), 0);
+            lv_obj_set_style_bg_opa(remote_config_overlay, LV_OPA_80, 0);
+            lv_obj_set_style_border_width(remote_config_overlay, 0, 0);
+            lv_obj_set_style_radius(remote_config_overlay, 0, 0);
+            
+            lv_obj_t *label = lv_label_create(remote_config_overlay);
+            lv_label_set_text(label, "Remote Configuration\nIn Progress...");
+            lv_obj_set_style_text_color(label, lv_color_hex(0xFFFFFF), 0);
+            lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+            lv_obj_center(label);
+            
+            lv_obj_add_flag(remote_config_overlay, LV_OBJ_FLAG_CLICKABLE);
+        }
+        
+        if (remote_config_timer) {
+            lv_timer_del(remote_config_timer);
+        }
+        remote_config_timer = lv_timer_create(remote_config_timeout_cb, 5000, NULL);
+        lv_timer_set_repeat_count(remote_config_timer, 1);
+        
+        lvgl_port_unlock();
+    }
+}
+
 static void rebuild_ui_timer_cb(lv_timer_t *timer)
 {
     static int state = 0;
@@ -78,6 +118,13 @@ void app_main(void)
     if (lvgl_port_lock(-1)) {
         const lever_system_config_t *curr_config = config_manager_get_current();
         system_tabview = lever_system_create(lv_scr_act(), curr_config);
+        
+        // Restore lever states if configuration matches
+        #include "state_manager.h"
+        if (curr_config->restore_last_state) {
+            state_manager_load_and_apply(system_tabview, config_manager_get_hash());
+        }
+        
         lvgl_port_unlock();
     }
 }
