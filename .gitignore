@@ -1,0 +1,13 @@
+# ESP-IDF build directory
+build/
+sdkconfig.old
+dependencies.lock
+managed_components/
+
+# CLion/IDEA files
+.idea/
+cmake-build-*/
+
+# OS specific files
+.DS_Store
+Thumbs.db
