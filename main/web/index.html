@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lever Frame Configurator</title>
+    <meta name="description" content="Wireless configuration portal for the ESP32 Lever Frame railway signaling emulator.">
+    <style>
+        :root {
+            --bg-dark: #0a0b0d; /* Deeper slate black */
+            --bg-card: rgba(26, 28, 33, 0.7); /* Translucent for glassmorphism */
+            --bg-input: rgba(15, 16, 20, 0.8);
+            --primary-brass: #b58c38; /* Slightly richer brass for the web */
+            --primary-brass-hover: #cfa344;
+            --text-main: #f0f0f0;
+            --text-muted: #9aa0a6;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-color: #333333;
+            
+            --color-home: #8f2727;
+            --color-distant: #b08817;
+            --color-points: #000000;
+            --color-facing: #2b58b5;
+            --color-spare: #b8b8b8;
+            
+            --transition-speed: 0.25s;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(circle at 50% 0%, #1a1c23 0%, var(--bg-dark) 60%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 30px 20px;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        header {
+            max-width: 1200px;
+            margin: 0 auto 30px auto;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 26px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #dfc176 0%, #a47622 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+        }
+
+        @media (max-width: 900px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            padding: 24px;
+            margin-bottom: 24px;
+            transition: transform var(--transition-speed) cubic-bezier(0.2, 0.8, 0.2, 1), 
+                        box-shadow var(--transition-speed) cubic-bezier(0.2, 0.8, 0.2, 1),
+                        border-color var(--transition-speed) ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-brass);
+        }
+
+        /* Tabs Styling */
+        .tabs-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+
+        .tab-btn {
+            background-color: var(--bg-input);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 10px 18px;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 16px;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .tab-btn:hover {
+            background-color: #353535;
+            border-color: var(--primary-brass);
+        }
+
+        .tab-btn.active {
+            background-color: var(--primary-brass);
+            color: #121212;
+            font-weight: bold;
+            border-color: var(--primary-brass);
+            box-shadow: 0 0 10px rgba(197, 179, 88, 0.3);
+        }
+
+        /* Form Controls */
+        label {
+            display: block;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            background-color: var(--bg-input);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: normal;
+            height: 38px;
+            transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
+        }
+
+        input[type="text"]:focus, input[type="number"]:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-brass);
+            box-shadow: 0 0 0 3px rgba(181, 140, 56, 0.2);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-input);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            text-decoration: none;
+            gap: 6px;
+        }
+
+        .btn:hover {
+            background-color: #353535;
+            border-color: var(--primary-brass);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-brass);
+            color: #121212;
+            font-weight: 600;
+            border-color: var(--primary-brass);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-brass-hover);
+            box-shadow: 0 0 12px rgba(197, 179, 88, 0.4);
+        }
+
+        .btn-danger {
+            background-color: #881c1c;
+            border-color: #a02222;
+        }
+
+        .btn-danger:hover {
+            background-color: #a82222;
+            border-color: #cc3333;
+        }
+
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+
+        /* Lever List Editor */
+        .lever-editor-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .lever-editor-card {
+            background-color: rgba(255,255,255,0.015);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            transition: background-color var(--transition-speed);
+        }
+        
+        .lever-editor-card:hover {
+            background-color: rgba(255,255,255,0.03);
+            border-color: rgba(255,255,255,0.1);
+        }
+
+        @media (max-width: 600px) {
+            .lever-editor-card {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+
+        .lever-index {
+            font-weight: bold;
+            color: var(--primary-brass);
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .lever-actions {
+            display: flex;
+            gap: 6px;
+            justify-content: flex-end;
+        }
+
+        /* Live Preview Styles */
+        .preview-pane {
+            position: sticky;
+            top: 20px;
+        }
+
+        .lever-frame-container {
+            display: flex;
+            justify-content: center;
+            background-color: #0d0d0d;
+            border: 3px solid #222;
+            border-radius: 6px;
+            padding: 15px 5px;
+            gap: 6px;
+            min-height: 480px;
+            overflow-x: auto;
+        }
+
+        .preview-lever-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 72px;
+            flex-shrink: 0;
+            gap: 6px;
+        }
+
+        .preview-plate {
+            background-color: #1a1a1a;
+            border: 2px solid #333;
+            border-top-color: #444;
+            border-left-color: #444;
+            border-radius: 4px;
+            width: 100%;
+            height: 380px;
+            padding: 8px 3px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preview-brass-label {
+            background-color: #8a6327;
+            color: #111;
+            font-weight: bold;
+            font-size: 9px;
+            text-align: center;
+            width: 100%;
+            padding: 4px 2px;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.1;
+            white-space: pre-wrap;
+            border-radius: 1px;
+            border: 2px ridge #5c421a;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .preview-color-bar {
+            width: 100%;
+            height: 12px;
+            border-radius: 2px;
+            margin-top: 4px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+
+        /* Lever types color mapping */
+        .color-HOME_SIGNAL { background-color: var(--color-home); }
+        .color-DISTANT_SIGNAL { background-color: var(--color-distant); }
+        .color-POINTS { 
+            background-color: var(--color-points); 
+            border: 1px solid #555;
+        }
+        .color-FACING_POINTS { background-color: var(--color-facing); }
+        .color-SPARE { background-color: var(--color-spare); }
+
+        .preview-switch-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            flex-grow: 1;
+            width: 100%;
+            padding: 10px 0;
+        }
+
+        .preview-state-lbl {
+            font-size: 8px;
+            color: #888;
+            text-align: center;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .preview-state-lbl.active {
+            color: #fff;
+            text-shadow: 0 0 5px rgba(255,255,255,0.5);
+        }
+
+        /* Mechanical Switch Track */
+        .preview-track {
+            width: 32px;
+            height: 160px;
+            background-color: #090909;
+            border-radius: 16px;
+            border: 2px solid #222;
+            position: relative;
+            cursor: pointer;
+        }
+
+        /* Knob (handle) of lever */
+        .preview-knob {
+            width: 24px;
+            height: 40px;
+            border-radius: 4px;
+            position: absolute;
+            left: 2px;
+            top: 10px; /* Normal position */
+            transition: top 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 4px 6px rgba(0,0,0,0.5);
+        }
+
+        .preview-track.thrown .preview-knob {
+            top: 106px; /* Thrown position */
+        }
+
+        /* Locking Pin Indicator */
+        .preview-lock-pin {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 16px;
+            height: 8px;
+            background-color: red;
+            border: 1px solid white;
+            border-radius: 1px;
+            box-shadow: 0 0 4px rgba(255,0,0,0.8);
+            z-index: 10;
+            display: none;
+        }
+
+        .preview-track.locked .preview-lock-pin {
+            display: block;
+        }
+
+        .preview-track.locked {
+            cursor: not-allowed;
+            opacity: 0.9;
+        }
+
+        /* Collar button */
+        .preview-collar-btn {
+            width: 100%;
+            height: 28px;
+            background-color: #292929;
+            border: none;
+            border-radius: 14px;
+            color: #fff;
+            font-size: 8px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all var(--transition-speed);
+        }
+
+        .preview-collar-btn.locked {
+            background-color: var(--color-home);
+            box-shadow: 0 0 8px rgba(255, 59, 48, 0.4);
+        }
+
+        /* Toasts */
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .toast {
+            background-color: #333;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-left: 4px solid var(--primary-brass);
+            animation: slideIn var(--transition-speed) ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+
+        /* Save & Apply Banner */
+        .banner-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div>
+            <h1>Lever Frame Configurator <span style="font-size: 14px; color: var(--text-muted); font-weight: normal; vertical-align: middle;">v1.1</span></h1>
+            <div class="subtitle">ESP32 Railway Signaling Control Interface</div>
+        </div>
+        <div class="header-actions" style="display: flex; gap: 20px; align-items: flex-start;">
+            <div id="save-action-group" style="display: none; flex-direction: column; align-items: flex-start; gap: 4px;">
+                <button class="btn btn-primary" id="save-btn" onclick="saveConfiguration()">Save & Apply</button>
+                <span style="font-size: 11px; color: var(--text-muted);">Warning: Saving will reboot device!</span>
+            </div>
+            <button class="btn" onclick="fetchConfig()">Reload</button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <!-- Editor Column -->
+        <div class="editor-column">
+            <!-- Navigation Tabs -->
+            <div class="tabs-nav" id="tabs-nav-container">
+                <!-- Dynamically filled -->
+            </div>
+
+            <!-- System Settings Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">System Settings</div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr; gap: 15px;">
+                    <div>
+                        <label for="wifi-password-input">Config Wi-Fi Password (WPA2)</label>
+                        <div style="position: relative;">
+                            <input type="password" id="wifi-password-input" oninput="updateWifiPassword(this.value)">
+                            <button type="button" onclick="togglePasswordVisibility()" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px;">👁</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Editor Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Frame Properties</div>
+                    <div class="tab-actions">
+                        <button class="btn btn-danger btn-small" onclick="deleteCurrentTab()">Delete Frame</button>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr auto; gap: 15px; align-items: flex-end; margin-bottom: 20px;">
+                    <div>
+                        <label for="tab-name-input">Frame / Tab Title</label>
+                        <input type="text" id="tab-name-input" oninput="updateTabName(this.value)">
+                    </div>
+                    <button class="btn" onclick="addNewTab()">Add New Frame</button>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; align-items: flex-end; margin-bottom: 10px;">
+                    <div>
+                        <label for="label-lines-input">Num Label Rows (e.g. 2)</label>
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" id="label-lines-input" autocomplete="off" oninput="updateLabelLines(this.value)">
+                    </div>
+                    <div>
+                        <label for="label-height-input">Row Height px (e.g. 18)</label>
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" id="label-height-input" autocomplete="off" oninput="updateLabelHeight(this.value)">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Levers Editor Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Levers Configuration</div>
+                    <button class="btn btn-primary btn-small" onclick="addNewLever()">+ Add Lever</button>
+                </div>
+                
+                <div class="lever-editor-list" id="levers-editor-list">
+                    <!-- Dynamically filled -->
+                </div>
+
+                <div id="no-levers-msg" class="empty-state" style="display:none;">
+                    No levers configured in this frame. Click "+ Add Lever" to start.
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Preview Column -->
+        <div class="preview-pane">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Live Preview</div>
+                    <span class="subtitle" id="preview-tab-name">Frame Preview</span>
+                </div>
+                <div class="lever-frame-container" id="preview-container">
+                    <!-- Dynamically drawn levers -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <script>
+        let configData = { tabs: [] };
+        let activeTabIdx = 0;
+        let originalConfigJson = "";
+
+        function checkChanges() {
+            const currentJson = JSON.stringify(configData);
+            const saveGroup = document.getElementById('save-action-group');
+            if (currentJson !== originalConfigJson) {
+                saveGroup.style.display = 'flex';
+            } else {
+                saveGroup.style.display = 'none';
+            }
+        }
+
+        // Fetch current config on load
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchConfig();
+        });
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            if (type === 'error') {
+                toast.style.borderLeftColor = '#ff3b30';
+            }
+            toast.innerText = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.5s';
+                setTimeout(() => toast.remove(), 500);
+            }, 3000);
+        }
+
+        async function fetchConfig() {
+            try {
+                // adding query param to fully bust api caching
+                const response = await fetch('/api/config?t=' + Date.now());
+                if (!response.ok) throw new Error('Failed to load config');
+                configData = await response.json();
+                
+                if (!configData.tabs || configData.tabs.length === 0) {
+                    // Seed defaults if empty
+                    configData = {
+                        tabs: [
+                            { name: "Main Frame", levers: [{ label: "SIGNAL", type: "HOME_SIGNAL" }] }
+                        ]
+                    };
+                }
+                
+                // Ensure active index is valid
+                if (activeTabIdx >= configData.tabs.length) {
+                    activeTabIdx = 0;
+                }
+                
+                renderTabs();
+                renderEditor();
+                renderPreview();
+                originalConfigJson = JSON.stringify(configData);
+                checkChanges();
+                showToast("Configuration loaded successfully.");
+            } catch (err) {
+                console.error(err);
+                showToast("Error loading configuration from device.", "error");
+            }
+        }
+
+        function renderTabs() {
+            const container = document.getElementById('tabs-nav-container');
+            container.innerHTML = '';
+            
+            configData.tabs.forEach((tab, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `tab-btn ${idx === activeTabIdx ? 'active' : ''}`;
+                btn.innerText = tab.name || `Frame ${idx + 1}`;
+                btn.onclick = () => {
+                    activeTabIdx = idx;
+                    renderTabs();
+                    renderEditor();
+                    renderPreview();
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        function renderEditor() {
+            const listContainer = document.getElementById('levers-editor-list');
+            const noLeversMsg = document.getElementById('no-levers-msg');
+            
+            listContainer.innerHTML = '';
+            
+            if (configData.tabs.length === 0) return;
+
+            const currentTab = configData.tabs[activeTabIdx];
+            
+            const linesVal = parseInt(currentTab.label_lines) || 2;
+            const heightVal = parseInt(currentTab.label_line_height) || 18;
+            currentTab.label_lines = linesVal;
+            currentTab.label_line_height = heightVal;
+
+            document.getElementById('tab-name-input').value = currentTab.name || '';
+            
+            setTimeout(() => {
+                const linesInput = document.getElementById('label-lines-input');
+                if (linesInput) {
+                    linesInput.value = linesVal;
+                    linesInput.setAttribute('value', linesVal);
+                }
+
+                const heightInput = document.getElementById('label-height-input');
+                if (heightInput) {
+                    heightInput.value = heightVal;
+                    heightInput.setAttribute('value', heightVal);
+                }
+            }, 100);
+
+            document.getElementById('wifi-password-input').value = configData.wifi_password || 'signalman';
+
+            if (!currentTab.levers || currentTab.levers.length === 0) {
+                noLeversMsg.style.display = 'block';
+                return;
+            }
+            noLeversMsg.style.display = 'none';
+
+            currentTab.levers.forEach((lever, idx) => {
+                const item = document.createElement('div');
+                item.className = 'lever-editor-card';
+                
+                // Build rules HTML
+                let rulesHtml = '';
+                if (lever.interlocking && lever.interlocking.length > 0) {
+                    lever.interlocking.forEach((rule, rIdx) => {
+                        let targetOptions = '<option value="-1">Select Lever...</option>';
+                        currentTab.levers.forEach((lvr, lIdx) => {
+                            if (lIdx !== idx) {
+                                targetOptions += `<option value="${lIdx}" ${rule.target === lIdx ? 'selected' : ''}>Lever ${lIdx + 1} (${escapeHtml(lvr.label).replace(/\\n/g, ' ')})</option>`;
+                            }
+                        });
+                        
+                        rulesHtml += `
+                            <div style="display: flex; gap: 8px; align-items: center; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px;">
+                                <span style="font-size: 12px; color: var(--text-muted);">Requires</span>
+                                <select class="btn-small" style="width: 150px; padding: 4px; font-size: 12px;" onchange="updateRuleTarget(${idx}, ${rIdx}, parseInt(this.value))">
+                                    ${targetOptions}
+                                </select>
+                                <span style="font-size: 12px; color: var(--text-muted);">to be</span>
+                                <select class="btn-small" style="width: 200px; padding: 4px; font-size: 12px;" onchange="updateRuleState(${idx}, ${rIdx}, this.value)">
+                                    <option value="REVERSED" ${rule.state === 'REVERSED' ? 'selected' : ''}>REVERSED (THROWN / OFF)</option>
+                                    <option value="NORMAL" ${rule.state === 'NORMAL' ? 'selected' : ''}>NORMAL (ON)</option>
+                                </select>
+                                <button class="btn btn-danger btn-small" style="padding: 2px 6px;" onclick="removeRule(${idx}, ${rIdx})">✕</button>
+                            </div>
+                        `;
+                    });
+                } else {
+                    rulesHtml = `<span style="font-size: 12px; color: var(--text-muted); font-style: italic;">No interlocking rules</span>`;
+                }
+
+                item.innerHTML = `
+                    <div style="display: grid; grid-template-columns: 40px 1fr 200px 120px; gap: 15px; align-items: center;">
+                        <div class="lever-index">${idx + 1}</div>
+                        <div>
+                            <label>Label Text (use \\n for wrap)</label>
+                            <input type="text" value="${escapeHtml(lever.label || '').replace(/\n/g, '\\n')}" onchange="updateLeverLabel(${idx}, this.value)">
+                        </div>
+                        <div>
+                            <label>Lever Color / Function</label>
+                            <select onchange="updateLeverProp(${idx}, 'type', this.value)">
+                                <option value="HOME_SIGNAL" ${lever.type === 'HOME_SIGNAL' ? 'selected' : ''}>Home Signal (Red)</option>
+                                <option value="DISTANT_SIGNAL" ${lever.type === 'DISTANT_SIGNAL' ? 'selected' : ''}>Distant Signal (Yellow)</option>
+                                <option value="POINTS" ${lever.type === 'POINTS' ? 'selected' : ''}>Points (Black)</option>
+                                <option value="FACING_POINTS" ${lever.type === 'FACING_POINTS' ? 'selected' : ''}>Facing Points (Blue)</option>
+                                <option value="SPARE" ${lever.type === 'SPARE' ? 'selected' : ''}>Spare (White)</option>
+                            </select>
+                        </div>
+                        <div class="lever-actions">
+                            <button class="btn btn-small" onclick="moveLever(${idx}, -1)" ${idx === 0 ? 'disabled' : ''}>▲</button>
+                            <button class="btn btn-small" onclick="moveLever(${idx}, 1)" ${idx === currentTab.levers.length - 1 ? 'disabled' : ''}>▼</button>
+                            <button class="btn btn-danger btn-small" onclick="deleteLever(${idx})">✕</button>
+                        </div>
+                    </div>
+                    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                        <strong style="font-size: 12px; color: var(--primary-brass); text-transform: uppercase;">Interlocking:</strong>
+                        ${rulesHtml}
+                        <button class="btn btn-small" style="padding: 2px 8px; font-size: 12px;" onclick="addRule(${idx})">+ Add Rule</button>
+                    </div>
+                `;
+                listContainer.appendChild(item);
+            });
+        }
+
+        function renderPreview() {
+            const container = document.getElementById('preview-container');
+            const previewTabTitle = document.getElementById('preview-tab-name');
+            container.innerHTML = '';
+            
+            const currentTab = configData.tabs[activeTabIdx];
+            if (!currentTab) {
+                previewTabTitle.innerText = "No Frame Active";
+                return;
+            }
+            
+            previewTabTitle.innerText = currentTab.name;
+            
+            if (!currentTab.levers || currentTab.levers.length === 0) {
+                container.innerHTML = '<div class="empty-state">No Levers to Preview</div>';
+                return;
+            }
+
+            currentTab.levers.forEach((lever, idx) => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'preview-lever-wrapper';
+                
+                // Determine label texts based on type
+                let upText = "ON";
+                let downText = "OFF";
+                if (lever.type === 'POINTS' || lever.type === 'FACING_POINTS') {
+                    upText = "NORMAL";
+                    downText = "THROWN";
+                } else if (lever.type === 'SPARE') {
+                    upText = "";
+                    downText = "";
+                }
+
+                let labelLines = currentTab.label_lines || 2;
+                let labelHeight = currentTab.label_line_height || 18;
+
+                // Render structure
+                wrapper.innerHTML = `
+                    <div class="preview-plate">
+                        <div style="width: 100%; display: flex; flex-direction: column; align-items: center;">
+                            <div class="preview-brass-label" style="height: ${labelLines * labelHeight}px; line-height: ${labelHeight}px;">${escapeHtml(lever.label).replace(/\\n/g, '<br>')}</div>
+                            <div class="preview-color-bar color-${lever.type}"></div>
+                        </div>
+                        <div class="preview-switch-group">
+                            <div class="preview-state-lbl val-up active">${upText}</div>
+                            <div class="preview-track" id="track-${idx}">
+                                <div class="preview-lock-pin"></div>
+                                <div class="preview-knob color-${lever.type}"></div>
+                            </div>
+                            <div class="preview-state-lbl val-down">${downText}</div>
+                        </div>
+                    </div>
+                    <button class="preview-collar-btn" id="collar-${idx}">Unlocked</button>
+                `;
+                
+                container.appendChild(wrapper);
+                
+                // Interaction Logic
+                const track = wrapper.querySelector('.preview-track');
+                const collar = wrapper.querySelector('.preview-collar-btn');
+                const valUp = wrapper.querySelector('.val-up');
+                const valDown = wrapper.querySelector('.val-down');
+                
+                // Collar lock action
+                collar.addEventListener('click', () => {
+                    const isLocked = collar.classList.toggle('locked');
+                    collar.innerText = isLocked ? "Locked" : "Unlocked";
+                    
+                    if (isLocked) {
+                        track.classList.add('locked');
+                    } else {
+                        track.classList.remove('locked');
+                    }
+                });
+                
+                // Slide switch toggle
+                track.addEventListener('click', () => {
+                    if (track.classList.contains('locked')) {
+                        // Flashes the lock pin to indicate it is locked
+                        const pin = track.querySelector('.preview-lock-pin');
+                        pin.style.display = 'block';
+                        setTimeout(() => {
+                            if (!track.classList.contains('locked')) {
+                                pin.style.display = 'none';
+                            }
+                        }, 500);
+                        return;
+                    }
+                    const isThrown = track.classList.toggle('thrown');
+                    
+                    if (isThrown) {
+                        valUp.classList.remove('active');
+                        valDown.classList.add('active');
+                    } else {
+                        valUp.classList.add('active');
+                        valDown.classList.remove('active');
+                    }
+                });
+            });
+        }
+
+        // Configuration manipulation
+        function updateTabName(name) {
+            configData.tabs[activeTabIdx].name = name;
+            renderTabs();
+            document.getElementById('preview-tab-name').innerText = name || 'Unnamed Frame';
+            checkChanges();
+        }
+
+        function updateLabelLines(value) {
+            configData.tabs[activeTabIdx].label_lines = parseInt(value) || 2;
+            renderPreview();
+            checkChanges();
+        }
+
+        function updateLabelHeight(value) {
+            configData.tabs[activeTabIdx].label_line_height = parseInt(value) || 18;
+            renderPreview();
+            checkChanges();
+        }
+
+        function updateWifiPassword(value) {
+            configData.wifi_password = value;
+            checkChanges();
+        }
+
+        function togglePasswordVisibility() {
+            const pwdInput = document.getElementById('wifi-password-input');
+            if (pwdInput.type === 'password') {
+                pwdInput.type = 'text';
+            } else {
+                pwdInput.type = 'password';
+            }
+        }
+
+        function addNewTab() {
+            const newTab = {
+                name: `New Frame ${configData.tabs.length + 1}`,
+                label_lines: 2,
+                label_line_height: 18,
+                levers: [
+                    { label: "SPARE", type: "SPARE" }
+                ]
+            };
+            configData.tabs.push(newTab);
+            activeTabIdx = configData.tabs.length - 1;
+            renderTabs();
+            renderEditor();
+            renderPreview();
+            checkChanges();
+        }
+
+        function deleteCurrentTab() {
+            if (configData.tabs.length <= 1) {
+                showToast("You must keep at least one frame.", "error");
+                return;
+            }
+            configData.tabs.splice(activeTabIdx, 1);
+            activeTabIdx = Math.max(0, activeTabIdx - 1);
+            renderTabs();
+            renderEditor();
+            renderPreview();
+            checkChanges();
+        }
+
+        function updateLeverProp(idx, prop, value) {
+            configData.tabs[activeTabIdx].levers[idx][prop] = value;
+            renderPreview();
+            checkChanges();
+        }
+
+        function updateLeverLabel(idx, value) {
+            configData.tabs[activeTabIdx].levers[idx].label = value.replace(/\\n/g, '\n');
+            renderPreview();
+            checkChanges();
+        }
+
+        function addNewLever() {
+            const currentTab = configData.tabs[activeTabIdx];
+            if (!currentTab.levers) currentTab.levers = [];
+            currentTab.levers.push({
+                label: "SPARE",
+                type: "SPARE"
+            });
+            renderEditor();
+            renderPreview();
+            checkChanges();
+        }
+
+        function deleteLever(idx) {
+            configData.tabs[activeTabIdx].levers.splice(idx, 1);
+            
+            // Clean up any interlocking rules that referenced this lever, and adjust indices
+            configData.tabs[activeTabIdx].levers.forEach(l => {
+                if (l.interlocking) {
+                    l.interlocking = l.interlocking.filter(rule => rule.target !== idx);
+                    l.interlocking.forEach(rule => {
+                        if (rule.target > idx) rule.target--;
+                    });
+                }
+            });
+            
+            renderEditor();
+            renderPreview();
+            checkChanges();
+        }
+
+        function addRule(leverIdx) {
+            const lever = configData.tabs[activeTabIdx].levers[leverIdx];
+            if (!lever.interlocking) lever.interlocking = [];
+            if (lever.interlocking.length >= 4) {
+                showToast("Maximum 4 interlocking rules per lever.", "error");
+                return;
+            }
+            lever.interlocking.push({ target: -1, state: "REVERSED" });
+            renderEditor();
+            checkChanges();
+        }
+
+        function removeRule(leverIdx, ruleIdx) {
+            configData.tabs[activeTabIdx].levers[leverIdx].interlocking.splice(ruleIdx, 1);
+            renderEditor();
+            checkChanges();
+        }
+
+        function updateRuleTarget(leverIdx, ruleIdx, val) {
+            configData.tabs[activeTabIdx].levers[leverIdx].interlocking[ruleIdx].target = val;
+            checkChanges();
+        }
+
+        function updateRuleState(leverIdx, ruleIdx, val) {
+            configData.tabs[activeTabIdx].levers[leverIdx].interlocking[ruleIdx].state = val;
+            checkChanges();
+        }
+
+        function moveLever(idx, dir) {
+            const levers = configData.tabs[activeTabIdx].levers;
+            const newIdx = idx + dir;
+            if (newIdx < 0 || newIdx >= levers.length) return;
+            
+            // Swap
+            const temp = levers[idx];
+            levers[idx] = levers[newIdx];
+            levers[newIdx] = temp;
+            
+            renderEditor();
+            renderPreview();
+            checkChanges();
+        }
+
+        async function saveConfiguration() {
+            const saveBtn = document.getElementById('save-btn');
+            saveBtn.disabled = true;
+            saveBtn.innerText = "Saving...";
+            
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(configData)
+                });
+                
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(text || 'Failed to save config');
+                }
+                
+                showToast("Configuration saved! Rebooting device in 3s...", "success");
+                
+                // Wait for the device to restart, then reload the page
+                let countdown = 3;
+                saveBtn.innerText = `Rebooting (${countdown}s)...`;
+                const interval = setInterval(() => {
+                    countdown--;
+                    if (countdown > 0) {
+                        saveBtn.innerText = `Rebooting (${countdown}s)...`;
+                    } else {
+                        clearInterval(interval);
+                        saveBtn.innerText = "Reconnecting...";
+                        window.location.reload();
+                    }
+                }, 1000);
+                
+                // We don't re-enable the save button here because the page will reload
+                return;
+                
+            } catch (err) {
+                console.error(err);
+                showToast("Error saving configuration: " + err.message, "error");
+                saveBtn.disabled = false;
+                saveBtn.innerText = "Save & Apply";
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>

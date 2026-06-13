@@ -15,3 +15,4 @@ dependencies:
   #   # All dependencies of `main` are public by default.
   #   public: true
   bobscott45/waveshare_esp32_s3_touch_lcd_4_3: '*'
+  espressif/cjson: '*'

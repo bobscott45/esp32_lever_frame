@@ -13,17 +13,14 @@
 #define LEVER_WIDTH 60
 
 #define LEVER_LABEL_COLOR 0x111111
-#define LEVER_LABEL_BG_COLOR 0xB5A642
-#define LEVER_LABEL_LINES 2
-#define LEVER_LABEL_LINE_HEIGHT 18
+#define LEVER_LABEL_BG_COLOR 0x8a6327 // Dark Antique Brass
 #define LEVER_LABEL_PADDING_Y 14
-#define LEVER_LABEL_HEIGHT (LEVER_LABEL_LINES * LEVER_LABEL_LINE_HEIGHT + LEVER_LABEL_PADDING_Y)
 
-#define LEVER_COLOR_HOME_SIGNAL    0xff0000 // Red
-#define LEVER_COLOR_DISTANT_SIGNAL 0xffff00 // Yellow
+#define LEVER_COLOR_HOME_SIGNAL    0x8f2727 // Darker Red
+#define LEVER_COLOR_DISTANT_SIGNAL 0xb08817 // Darker Muted Yellow
 #define LEVER_COLOR_POINTS         0x000000 // Black
-#define LEVER_COLOR_FACING_POINTS  0x0000ff // Blue
-#define LEVER_COLOR_SPARE          0xffffff // White
+#define LEVER_COLOR_FACING_POINTS  0x2b58b5 // Royal Blue
+#define LEVER_COLOR_SPARE          0xb8b8b8 // Medium Light Gray
 
 typedef enum {
     LEVER_TYPE_HOME_SIGNAL,
@@ -36,8 +33,9 @@ typedef enum {
 #define LEVER_STATE_NORMAL_COLOR   0x111111 // Dark Void for the slot
 
 #include "lvgl.h"
-lv_obj_t *lever_create(lv_obj_t *parent, const char *label_text, lever_type_t type);
+lv_obj_t *lever_create(lv_obj_t *parent, const char *label_text, lever_type_t type, uint8_t label_lines, uint8_t label_line_height);
 void lever_set_locked(lv_obj_t *wrapper, bool locked);
 void lever_set_state_labels(lv_obj_t *wrapper, const char *up_text, const char *down_text);
+void lever_frame_update_system_locks(lv_obj_t *frame);
 
 #endif //LVGL_TEST_LEVER_H

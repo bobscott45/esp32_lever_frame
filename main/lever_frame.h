@@ -5,20 +5,31 @@
 #include "lvgl.h"
 #include "lever.h"
 
+#define MAX_INTERLOCKING_CONDITIONS 4
+
+typedef struct {
+    int target_lever_index; // -1 if unused
+    bool required_state; // true = THROWN, false = NORMAL
+} interlocking_condition_t;
+
 typedef struct {
     const char *label;
     lever_type_t type;
+    interlocking_condition_t conditions[MAX_INTERLOCKING_CONDITIONS];
 } lever_def_t;
 
 typedef struct {
     const char *name;
     const lever_def_t *levers;
     size_t lever_count;
+    uint8_t label_lines;
+    uint8_t label_line_height;
 } tab_def_t;
 
 typedef struct {
     const tab_def_t *tabs;
     size_t tab_count;
+    const char *wifi_password;
 } lever_system_config_t;
 
 /**
