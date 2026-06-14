@@ -34,12 +34,12 @@ lv_obj_t *lever_frame_create(lv_obj_t *parent) {
     return frame;
 }
 
-lv_obj_t *lever_frame_add_lever(lv_obj_t *frame, const char *label_text, lever_type_t type) {
+lv_obj_t *lever_frame_add_lever(lv_obj_t *frame, const lever_def_t *lever_def) {
     const tab_def_t *tab_def = (const tab_def_t *)lv_obj_get_user_data(frame);
     uint8_t lines = (tab_def && tab_def->label_lines > 0) ? tab_def->label_lines : 2;
     uint8_t height = (tab_def && tab_def->label_line_height > 0) ? tab_def->label_line_height : 18;
     
-    lv_obj_t *lever = lever_create(frame, label_text, type, lines, height);
+    lv_obj_t *lever = lever_create(frame, lever_def, lines, height);
     return lever;
 }
 
@@ -107,7 +107,7 @@ lv_obj_t *lever_system_create(lv_obj_t *parent, const lever_system_config_t *con
         // Add all defined levers to the frame
         for (size_t l = 0; l < tab_def->lever_count; l++) {
             const lever_def_t *lever_def = &tab_def->levers[l];
-            lever_frame_add_lever(frame, lever_def->label, lever_def->type);
+            lever_frame_add_lever(frame, lever_def);
         }
         
         // Evaluate initial system locks for all levers in the frame

@@ -192,6 +192,8 @@
             border-radius: 4px;
             font-size: 14px;
             cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
             transition: all var(--transition-speed);
             text-decoration: none;
             gap: 6px;
@@ -432,6 +434,9 @@
             height: 28px;
             background-color: #292929;
             border: none;
+            outline: none;
+            appearance: none;
+            -webkit-appearance: none;
             border-radius: 14px;
             color: #fff;
             font-size: 8px;
@@ -501,7 +506,7 @@
         <div class="header-actions" style="display: flex; gap: 20px; align-items: flex-start;">
             <div id="save-action-group" style="display: none; flex-direction: column; align-items: flex-start; gap: 4px;">
                 <button class="btn btn-primary" id="save-btn" onclick="saveConfiguration()">Save & Apply</button>
-                <span style="font-size: 11px; color: var(--text-muted);">Warning: Saving will reboot device!</span>
+                <span style="font-size: 11px; color: #ff5555; font-weight: bold; max-width: 140px; line-height: 1.2;">Warning: Saving resets all lever states!</span>
             </div>
             <button class="btn" onclick="fetchConfig()">Reload</button>
         </div>
@@ -520,7 +525,7 @@
                 <div class="card-header">
                     <div class="card-title">System Settings</div>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
                     <div>
                         <label for="wifi-password-input">Config Wi-Fi Password (WPA2)</label>
                         <div style="position: relative;">
@@ -535,6 +540,20 @@
                             <option value="false">Safe Default State</option>
                         </select>
                     </div>
+                    <div>
+                        <label for="conflict-policy-select">Network Override Policy</label>
+                        <select id="conflict-policy-select" onchange="updateConflictPolicy(this.value)">
+                            <option value="0">Strict Local (Reject Override)</option>
+                            <option value="1">Central (Accept Override)</option>
+                            <option value="2">Alarm Mode (Accept & Warn)</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                    <label for="global-lcc-checkbox" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="global-lcc-checkbox" onchange="updateGlobalLcc(this.checked)">
+                        <strong>Master LCC Enable</strong>
+                    </label>
                 </div>
             </div>
 
@@ -726,6 +745,14 @@
             if (restoreSelect) {
                 restoreSelect.value = configData.restore_last_state === false ? "false" : "true";
             }
+            const conflictSelect = document.getElementById('conflict-policy-select');
+            if (conflictSelect) {
+                conflictSelect.value = configData.conflict_policy !== undefined ? configData.conflict_policy.toString() : "0";
+            }
+            const globalLcc = document.getElementById('global-lcc-checkbox');
+            if (globalLcc) {
+                globalLcc.checked = configData.lcc_enabled !== false; // defaults to true
+            }
 
             if (!currentTab.levers || currentTab.levers.length === 0) {
                 noLeversMsg.style.display = 'block';
@@ -790,11 +817,31 @@
                             <button class="btn btn-danger btn-small" onclick="deleteLever(${idx})">✕</button>
                         </div>
                     </div>
-                    <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color); display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
-                        <strong style="font-size: 12px; color: var(--primary-brass); text-transform: uppercase;">Interlocking:</strong>
-                        ${rulesHtml}
-                        <button class="btn btn-small" style="padding: 2px 8px; font-size: 12px;" onclick="addRule(${idx})">+ Add Rule</button>
-                    </div>
+                    <details style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color);">
+                        <summary style="font-size: 13px; color: var(--primary-brass); cursor: pointer; user-select: none; font-weight: bold; outline: none;">
+                            Advanced Settings (Interlocking & LCC)
+                        </summary>
+                        <div style="padding-top: 12px; display: flex; flex-direction: column; gap: 12px;">
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: rgba(0,0,0,0.1); padding: 8px; border-radius: 6px;">
+                                <strong style="font-size: 12px; color: var(--primary-brass); text-transform: uppercase;">Interlocking:</strong>
+                                ${rulesHtml}
+                                <button class="btn btn-small" style="padding: 2px 8px; font-size: 12px;" onclick="addRule(${idx})">+ Add Rule</button>
+                            </div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: rgba(0,0,0,0.1); padding: 8px; border-radius: 6px;">
+                                <strong style="font-size: 12px; color: #a4b0be; text-transform: uppercase;">LCC Events:</strong>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <span style="font-size: 12px; color: var(--text-muted);">Normal:</span>
+                                    <input type="text" placeholder="e.g. 02.01.57.00.00.01.00.01" value="${escapeHtml(lever.lcc_event_normal || '')}" onchange="updateLeverProp(${idx}, 'lcc_event_normal', this.value)" style="width: 180px; font-size: 12px; padding: 4px;">
+                                    <span style="font-size: 12px; color: var(--text-muted);">Reversed:</span>
+                                    <input type="text" placeholder="e.g. 02.01.57.00.00.01.00.02" value="${escapeHtml(lever.lcc_event_reversed || '')}" onchange="updateLeverProp(${idx}, 'lcc_event_reversed', this.value)" style="width: 180px; font-size: 12px; padding: 4px;">
+                                    <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; margin-left: 8px; cursor: pointer;">
+                                        <input type="checkbox" ${lever.lcc_enabled !== false ? 'checked' : ''} onchange="updateLeverProp(${idx}, 'lcc_enabled', this.checked)">
+                                        Enabled
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </details>
                 `;
                 listContainer.appendChild(item);
             });
@@ -931,6 +978,16 @@
             checkChanges();
         }
 
+        function updateConflictPolicy(val) {
+            configData.conflict_policy = parseInt(val) || 0;
+            checkChanges();
+        }
+
+        function updateGlobalLcc(val) {
+            configData.lcc_enabled = val;
+            checkChanges();
+        }
+
         function togglePasswordVisibility() {
             const pwdInput = document.getElementById('wifi-password-input');
             if (pwdInput.type === 'password') {
@@ -1056,6 +1113,10 @@
         }
 
         async function saveConfiguration() {
+            if (!confirm("Warning: Saving these changes will completely reset the device's saved lever states to their defaults.\n\nAre you sure you want to proceed and reboot the device?")) {
+                return;
+            }
+
             const saveBtn = document.getElementById('save-btn');
             saveBtn.disabled = true;
             saveBtn.innerText = "Saving...";

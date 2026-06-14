@@ -12,10 +12,19 @@ typedef struct {
     bool required_state; // true = THROWN, false = NORMAL
 } interlocking_condition_t;
 
+typedef enum {
+    INTERLOCK_POLICY_STRICT_LOCAL = 0, // Reject external changes that violate local locking
+    INTERLOCK_POLICY_NETWORK_OVERRIDE = 1, // Accept external changes, ignore local locking
+    INTERLOCK_POLICY_ALARM = 2 // Accept external changes, but flag an error
+} interlocking_conflict_policy_t;
+
 typedef struct {
     const char *label;
     lever_type_t type;
     interlocking_condition_t conditions[MAX_INTERLOCKING_CONDITIONS];
+    char lcc_event_normal[64];
+    char lcc_event_reversed[64];
+    bool lcc_enabled;
 } lever_def_t;
 
 typedef struct {
@@ -31,6 +40,8 @@ typedef struct {
     size_t tab_count;
     const char *wifi_password;
     bool restore_last_state;
+    interlocking_conflict_policy_t conflict_policy;
+    bool lcc_enabled;
 } lever_system_config_t;
 
 /**
@@ -47,7 +58,7 @@ lv_obj_t *lever_frame_create(lv_obj_t *parent);
  * @param type The type of lever (sets color and text semantics)
  * @return The created lever wrapper object
  */
-lv_obj_t *lever_frame_add_lever(lv_obj_t *frame, const char *label_text, lever_type_t type);
+lv_obj_t *lever_frame_add_lever(lv_obj_t *frame, const lever_def_t *lever_def);
 
 /**
  * Creates a complete lever system (tabview and horizontal lever frames) based on the configuration struct.

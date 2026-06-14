@@ -186,15 +186,18 @@ esp_err_t web_server_start(void) {
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
     const lever_system_config_t *curr_config = config_manager_get_current();
-    const char *ap_password = (curr_config && curr_config->wifi_password) ? curr_config->wifi_password : "signalman";
+    const char *ap_password = (curr_config && curr_config->wifi_password && strlen(curr_config->wifi_password) >= 8) ? curr_config->wifi_password : "signalman";
 
     wifi_config_t wifi_config = {
         .ap = {
             .ssid = "Lever-Frame-Config",
             .ssid_len = strlen("Lever-Frame-Config"),
-            .channel = 1,
+            .channel = 6, // Channel 6 is often less congested and faster to be listed
             .max_connection = 4,
-            .authmode = WIFI_AUTH_WPA2_PSK
+            .authmode = WIFI_AUTH_WPA_WPA2_PSK,
+            .pmf_cfg = {
+                .required = false,
+            },
         },
     };
     strncpy((char *)wifi_config.ap.password, ap_password, sizeof(wifi_config.ap.password) - 1);

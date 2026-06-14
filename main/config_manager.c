@@ -190,6 +190,27 @@ static esp_err_t parse_json_to_config(const char *json_str, lever_system_config_
                 const char *type_str = type_obj && cJSON_IsString(type_obj) ? type_obj->valuestring : "SPARE";
                 dynamic_levers[l].type = str_to_lever_type(type_str);
                 
+                cJSON *lcc_norm = cJSON_GetObjectItem(lever_obj, "lcc_event_normal");
+                if (lcc_norm && cJSON_IsString(lcc_norm)) {
+                    strncpy(dynamic_levers[l].lcc_event_normal, lcc_norm->valuestring, sizeof(dynamic_levers[l].lcc_event_normal) - 1);
+                } else {
+                    dynamic_levers[l].lcc_event_normal[0] = '\0';
+                }
+
+                cJSON *lcc_rev = cJSON_GetObjectItem(lever_obj, "lcc_event_reversed");
+                if (lcc_rev && cJSON_IsString(lcc_rev)) {
+                    strncpy(dynamic_levers[l].lcc_event_reversed, lcc_rev->valuestring, sizeof(dynamic_levers[l].lcc_event_reversed) - 1);
+                } else {
+                    dynamic_levers[l].lcc_event_reversed[0] = '\0';
+                }
+                
+                cJSON *lcc_en_obj = cJSON_GetObjectItem(lever_obj, "lcc_enabled");
+                if (lcc_en_obj && cJSON_IsBool(lcc_en_obj)) {
+                    dynamic_levers[l].lcc_enabled = cJSON_IsTrue(lcc_en_obj);
+                } else {
+                    dynamic_levers[l].lcc_enabled = true; // default enabled
+                }
+                
                 for(int c = 0; c < MAX_INTERLOCKING_CONDITIONS; c++) {
                     dynamic_levers[l].conditions[c].target_lever_index = -1;
                     dynamic_levers[l].conditions[c].required_state = false;
@@ -233,6 +254,20 @@ static esp_err_t parse_json_to_config(const char *json_str, lever_system_config_
         out_config->restore_last_state = cJSON_IsTrue(restore_obj);
     } else {
         out_config->restore_last_state = true;
+    }
+    
+    cJSON *policy_obj = cJSON_GetObjectItem(root, "conflict_policy");
+    if (policy_obj && cJSON_IsNumber(policy_obj)) {
+        out_config->conflict_policy = (interlocking_conflict_policy_t)policy_obj->valueint;
+    } else {
+        out_config->conflict_policy = INTERLOCK_POLICY_STRICT_LOCAL;
+    }
+    
+    cJSON *global_lcc_obj = cJSON_GetObjectItem(root, "lcc_enabled");
+    if (global_lcc_obj && cJSON_IsBool(global_lcc_obj)) {
+        out_config->lcc_enabled = cJSON_IsTrue(global_lcc_obj);
+    } else {
+        out_config->lcc_enabled = true; // default enabled
     }
     
     cJSON_Delete(root);
@@ -409,6 +444,8 @@ char *config_manager_get_json_str(void) {
     }
     
     cJSON_AddBoolToObject(root, "restore_last_state", curr->restore_last_state);
+    cJSON_AddNumberToObject(root, "conflict_policy", curr->conflict_policy);
+    cJSON_AddBoolToObject(root, "lcc_enabled", curr->lcc_enabled);
     
     cJSON *tabs_arr = cJSON_CreateArray();
     cJSON_AddItemToObject(root, "tabs", tabs_arr);
@@ -425,6 +462,14 @@ char *config_manager_get_json_str(void) {
             cJSON *lever_obj = cJSON_CreateObject();
             cJSON_AddStringToObject(lever_obj, "label", curr->tabs[t].levers[l].label);
             cJSON_AddStringToObject(lever_obj, "type", lever_type_to_str(curr->tabs[t].levers[l].type));
+            
+            if (strlen(curr->tabs[t].levers[l].lcc_event_normal) > 0) {
+                cJSON_AddStringToObject(lever_obj, "lcc_event_normal", curr->tabs[t].levers[l].lcc_event_normal);
+            }
+            if (strlen(curr->tabs[t].levers[l].lcc_event_reversed) > 0) {
+                cJSON_AddStringToObject(lever_obj, "lcc_event_reversed", curr->tabs[t].levers[l].lcc_event_reversed);
+            }
+            cJSON_AddBoolToObject(lever_obj, "lcc_enabled", curr->tabs[t].levers[l].lcc_enabled);
             
             cJSON *interlocking_arr = cJSON_CreateArray();
             for(int c = 0; c < MAX_INTERLOCKING_CONDITIONS; c++) {

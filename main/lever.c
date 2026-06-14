@@ -244,12 +244,142 @@ static lv_obj_t *switch_container_create(lv_obj_t *parent) {
     return obj;
 }
 
-static lv_obj_t *lever_label_create(lv_obj_t *parent, const char *label_text, uint8_t label_height) {
+static lv_obj_t *lever_info_drawer = NULL;
+static lv_obj_t *lever_info_dimmer = NULL;
+
+static void lever_drawer_anim_ready_cb(lv_anim_t * a) {
+    if (lever_info_drawer) {
+        lv_obj_del(lever_info_drawer);
+        lever_info_drawer = NULL;
+    }
+    if (lever_info_dimmer) {
+        lv_obj_del(lever_info_dimmer);
+        lever_info_dimmer = NULL;
+    }
+}
+
+static void lever_drawer_click_cb(lv_event_t * e) {
+    if (lever_info_drawer) {
+        lv_anim_t a;
+        lv_anim_init(&a);
+        lv_anim_set_var(&a, lever_info_drawer);
+        lv_anim_set_values(&a, 0, -lv_obj_get_height(lever_info_drawer));
+        lv_anim_set_time(&a, 300);
+        lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_obj_set_y);
+        lv_anim_set_path_cb(&a, lv_anim_path_ease_in);
+        lv_anim_set_ready_cb(&a, lever_drawer_anim_ready_cb);
+        lv_anim_start(&a);
+        
+        lv_obj_remove_flag(lever_info_drawer, LV_OBJ_FLAG_CLICKABLE);
+        if (lever_info_dimmer) lv_obj_remove_flag(lever_info_dimmer, LV_OBJ_FLAG_CLICKABLE);
+    }
+}
+
+static void ui_add_drawer_row(lv_obj_t *parent, const char *key, const char *val, uint32_t color) {
+    lv_obj_t *row = lv_obj_create(parent);
+    lv_obj_set_size(row, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_style_bg_opa(row, 0, 0);
+    lv_obj_set_style_border_width(row, 0, 0);
+    lv_obj_set_style_pad_all(row, 4, 0);
+    lv_obj_set_layout(row, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
+    lv_obj_remove_flag(row, LV_OBJ_FLAG_SCROLLABLE);
+
+    lv_obj_t *lbl_key = lv_label_create(row);
+    lv_obj_set_width(lbl_key, 160);
+    lv_label_set_text(lbl_key, key);
+    lv_obj_set_style_text_color(lbl_key, lv_color_hex(color), 0);
+    
+    lv_obj_t *lbl_val = lv_label_create(row);
+    lv_label_set_text(lbl_val, val);
+    lv_obj_set_style_text_color(lbl_val, lv_color_hex(0xFFFFFF), 0);
+}
+
+static void brass_plate_click_cb(lv_event_t * e) {
+    const lever_def_t *lever_def = lv_event_get_user_data(e);
+    if (!lever_def || lever_info_drawer || lever_info_dimmer) return;
+    
+    lever_info_dimmer = lv_obj_create(lv_scr_act());
+    lv_obj_remove_style_all(lever_info_dimmer);
+    lv_obj_set_size(lever_info_dimmer, LV_PCT(100), LV_PCT(100));
+    lv_obj_set_style_bg_color(lever_info_dimmer, lv_color_hex(0x000000), 0);
+    lv_obj_set_style_bg_opa(lever_info_dimmer, LV_OPA_60, 0);
+    lv_obj_add_flag(lever_info_dimmer, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(lever_info_dimmer, lever_drawer_click_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(lever_info_dimmer, lever_drawer_click_cb, LV_EVENT_GESTURE, NULL);
+    
+    lever_info_drawer = lv_obj_create(lv_scr_act());
+    lv_obj_set_size(lever_info_drawer, LV_PCT(100), LV_PCT(70));
+    lv_obj_align(lever_info_drawer, LV_ALIGN_TOP_MID, 0, 0);
+    
+    lv_obj_set_style_bg_color(lever_info_drawer, lv_color_hex(0x222222), 0);
+    lv_obj_set_style_bg_opa(lever_info_drawer, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(lever_info_drawer, 0, 0);
+    lv_obj_set_style_radius(lever_info_drawer, 0, 0);
+    lv_obj_set_style_border_side(lever_info_drawer, LV_BORDER_SIDE_BOTTOM, 0);
+    lv_obj_set_style_border_width(lever_info_drawer, 4, 0);
+    lv_obj_set_style_border_color(lever_info_drawer, lv_color_hex(0x8a6327), 0);
+    
+    const char *lcc_norm = (lever_def->lcc_event_normal[0] != '\0') ? lever_def->lcc_event_normal : "None";
+    const char *lcc_rev = (lever_def->lcc_event_reversed[0] != '\0') ? lever_def->lcc_event_reversed : "None";
+    
+    lv_obj_t *title = lv_label_create(lever_info_drawer);
+    lv_label_set_text(title, "Lever Settings");
+    lv_obj_set_style_text_color(title, lv_color_hex(0xFFFFFF), 0);
+    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 15);
+    
+    lv_obj_t *table = lv_obj_create(lever_info_drawer);
+    lv_obj_set_size(table, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_center(table);
+    lv_obj_set_style_bg_opa(table, 0, 0);
+    lv_obj_set_style_border_width(table, 0, 0);
+    lv_obj_set_style_pad_all(table, 0, 0);
+    lv_obj_set_layout(table, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_flow(table, LV_FLEX_FLOW_COLUMN);
+    lv_obj_remove_flag(table, LV_OBJ_FLAG_SCROLLABLE);
+    
+    ui_add_drawer_row(table, "Label:", lever_def->label, 0x8a6327);
+    
+    lv_obj_t *spacer = lv_obj_create(table);
+    lv_obj_remove_style_all(spacer);
+    lv_obj_set_size(spacer, 10, 15);
+    
+    ui_add_drawer_row(table, "LCC Enabled:", (lever_def->lcc_enabled != false) ? "Yes" : "No", 0x8a6327);
+    ui_add_drawer_row(table, "Normal Event:", lcc_norm, 0x8a6327);
+    ui_add_drawer_row(table, "Reversed Event:", lcc_rev, 0x8a6327);
+    
+    lv_obj_t *footer = lv_label_create(lever_info_drawer);
+    lv_label_set_text(footer, "(Swipe Up or Tap to dismiss)");
+    lv_obj_set_style_text_color(footer, lv_color_hex(0x888888), 0);
+    lv_obj_align(footer, LV_ALIGN_BOTTOM_MID, 0, -15);
+    
+    lv_obj_add_flag(lever_info_drawer, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(lever_info_drawer, lever_drawer_click_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_add_event_cb(lever_info_drawer, lever_drawer_click_cb, LV_EVENT_GESTURE, NULL);
+    
+    lv_anim_t a;
+    lv_anim_init(&a);
+    lv_anim_set_var(&a, lever_info_drawer);
+    lv_obj_update_layout(lever_info_drawer);
+    lv_coord_t h = lv_obj_get_height(lever_info_drawer);
+    lv_obj_set_y(lever_info_drawer, -h);
+    lv_anim_set_values(&a, -h, 0);
+    lv_anim_set_time(&a, 300);
+    lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_obj_set_y);
+    lv_anim_set_path_cb(&a, lv_anim_path_ease_out);
+    lv_anim_start(&a);
+}
+
+static lv_obj_t *lever_label_create(lv_obj_t *parent, const lever_def_t *lever_def, uint8_t label_height) {
     // Create the brass plate as a fixed-size container
     lv_obj_t *plate = lv_obj_create(parent);
     lv_obj_set_width(plate, lv_pct(100));
     lv_obj_set_height(plate, label_height); // Uniform height to accommodate multi-line text
     lv_obj_remove_flag(plate, LV_OBJ_FLAG_SCROLLABLE);
+    
+    // Make plate clickable
+    lv_obj_add_flag(plate, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(plate, brass_plate_click_cb, LV_EVENT_CLICKED, (void *)lever_def);
     
     // Style the plate
     lv_obj_set_style_bg_color(plate, lv_color_hex(LEVER_LABEL_BG_COLOR), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -261,7 +391,7 @@ static lv_obj_t *lever_label_create(lv_obj_t *parent, const char *label_text, ui
     
     // Create the text label and center it perfectly inside the plate
     lv_obj_t *label = lv_label_create(plate);
-    lv_label_set_text(label, label_text);
+    lv_label_set_text(label, lever_def->label);
     lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
     lv_obj_set_style_text_color(label, lv_color_hex(LEVER_LABEL_COLOR), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -342,10 +472,12 @@ static lv_obj_t *color_bar_create(lv_obj_t *parent, uint32_t color) {
     return obj;
 }
 
-lv_obj_t *lever_create(lv_obj_t *parent, const char *label_text, lever_type_t type, uint8_t label_lines, uint8_t label_line_height) {
-    uint32_t type_color;
-    const char *up_text;
-    const char *down_text;
+lv_obj_t *lever_create(lv_obj_t *parent, const void *lever_def_ptr, uint8_t label_lines, uint8_t label_line_height) {
+    const lever_def_t *lever_def = (const lever_def_t *)lever_def_ptr;
+    uint32_t type_color = 0x000000;
+    const char *up_text = "";
+    const char *down_text = "";
+    lever_type_t type = lever_def->type;
     
     // Calculate total height needed for the brass plate
     uint8_t label_height = (label_lines * label_line_height) + LEVER_LABEL_PADDING_Y;
@@ -397,7 +529,7 @@ lv_obj_t *lever_create(lv_obj_t *parent, const char *label_text, lever_type_t ty
     
     // Group the top label and the color bar together
     lv_obj_t *header = header_container_create(container);
-    lever_label_create(header, label_text, label_height);
+    lever_label_create(header, lever_def, label_height);
     color_bar_create(header, type_color);
     
     // Group the switch and its labels tightly together
@@ -427,6 +559,7 @@ lv_obj_t *lever_create(lv_obj_t *parent, const char *label_text, lever_type_t ty
     lv_obj_set_style_bg_color(collar_btn, lv_color_hex(0x252525), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_bg_color(collar_btn, lv_color_hex(0xcc3333), LV_PART_MAIN | LV_STATE_CHECKED);
     lv_obj_set_style_border_width(collar_btn, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_width(collar_btn, 0, LV_PART_MAIN);
     
     // Prevent the button from fading out when system locks it
     lv_obj_set_style_bg_opa(collar_btn, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DISABLED);
