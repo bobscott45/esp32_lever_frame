@@ -54,7 +54,12 @@ static const tab_def_t default_tabs[] = {
 static const lever_system_config_t default_config = {
     .tabs = default_tabs,
     .tab_count = sizeof(default_tabs) / sizeof(default_tabs[0]),
-    .restore_last_state = true
+    .restore_last_state = true,
+    .conflict_policy = INTERLOCK_POLICY_STRICT_LOCAL,
+    .lcc_enabled = true,
+    .wifi_ssid = "ZENBQ16",
+    .wifi_password = "signalman",
+    .wifi_station_password = "Juniper#1945"
 };
 
 // Currently active dynamic configuration
@@ -382,7 +387,17 @@ const lever_system_config_t *config_manager_get_current(void) {
     return &default_config;
 }
 
-esp_err_t config_manager_save_json(const char *json_str) {
+static lever_system_config_t pending_free_config = {0};
+static bool has_pending_free = false;
+
+void config_manager_free_pending(void) {
+    if (has_pending_free) {
+        free_dynamic_config(&pending_free_config);
+        has_pending_free = false;
+    }
+}
+
+esp_err_t config_manager_save_json_internal(const char *json_str, bool notify) {
     lever_system_config_t new_config = {0};
     esp_err_t err = parse_json_to_config(json_str, &new_config);
     if (err != ESP_OK) {
@@ -413,7 +428,11 @@ esp_err_t config_manager_save_json(const char *json_str) {
 
     // Swap configurations
     if (is_using_dynamic) {
-        free_dynamic_config(&active_dynamic_config);
+        if (has_pending_free) {
+            free_dynamic_config(&pending_free_config);
+        }
+        pending_free_config = active_dynamic_config;
+        has_pending_free = true;
     }
     active_dynamic_config = new_config;
     is_using_dynamic = true;
@@ -422,11 +441,15 @@ esp_err_t config_manager_save_json(const char *json_str) {
     ESP_LOGI(TAG, "Dynamic configuration updated and saved to NVS.");
 
     // Trigger callback if registered
-    if (on_config_change) {
+    if (notify && on_config_change) {
         on_config_change();
     }
 
     return ESP_OK;
+}
+
+esp_err_t config_manager_save_json(const char *json_str) {
+    return config_manager_save_json_internal(json_str, true);
 }
 
 char *config_manager_get_json_str(void) {
@@ -528,6 +551,99 @@ char *config_manager_get_json_str(void) {
     return json_str;
 }
 
+static esp_err_t update_config_with_cjson(void (*update_cb)(cJSON *root, void *ctx), void *ctx, bool notify) {
+    char *json_str = config_manager_get_json_str();
+    if (!json_str) return ESP_ERR_NO_MEM;
+    
+    cJSON *root = cJSON_Parse(json_str);
+    free(json_str);
+    if (!root) return ESP_ERR_INVALID_ARG;
+    
+    update_cb(root, ctx);
+    
+    char *new_json_str = cJSON_PrintUnformatted(root);
+    cJSON_Delete(root);
+    if (!new_json_str) return ESP_ERR_NO_MEM;
+    
+    esp_err_t err = config_manager_save_json_internal(new_json_str, notify);
+    free(new_json_str);
+    return err;
+}
+
+struct global_bool_update_ctx {
+    const char *key;
+    bool value;
+};
+
+static void update_global_bool_cb(cJSON *root, void *ctx) {
+    struct global_bool_update_ctx *c = ctx;
+    cJSON *newitem = cJSON_CreateBool(c->value);
+    if (cJSON_HasObjectItem(root, c->key)) {
+        cJSON_ReplaceItemInObjectCaseSensitive(root, c->key, newitem);
+    } else {
+        cJSON_AddItemToObject(root, c->key, newitem);
+    }
+}
+
+esp_err_t config_manager_update_global_bool(const char *key, bool value) {
+    struct global_bool_update_ctx ctx = {key, value};
+    return update_config_with_cjson(update_global_bool_cb, &ctx, false);
+}
+
+struct global_int_update_ctx {
+    const char *key;
+    int value;
+};
+
+static void update_global_int_cb(cJSON *root, void *ctx) {
+    struct global_int_update_ctx *c = ctx;
+    cJSON *newitem = cJSON_CreateNumber(c->value);
+    if (cJSON_HasObjectItem(root, c->key)) {
+        cJSON_ReplaceItemInObjectCaseSensitive(root, c->key, newitem);
+    } else {
+        cJSON_AddItemToObject(root, c->key, newitem);
+    }
+}
+
+esp_err_t config_manager_update_global_int(const char *key, int value) {
+    struct global_int_update_ctx ctx = {key, value};
+    return update_config_with_cjson(update_global_int_cb, &ctx, false);
+}
+
+struct lever_bool_update_ctx {
+    int tab_idx;
+    int lever_idx;
+    const char *key;
+    bool value;
+};
+
+static void update_lever_bool_cb(cJSON *root, void *ctx) {
+    struct lever_bool_update_ctx *c = ctx;
+    cJSON *tabs = cJSON_GetObjectItem(root, "tabs");
+    if (!tabs || !cJSON_IsArray(tabs)) return;
+    
+    cJSON *tab = cJSON_GetArrayItem(tabs, c->tab_idx);
+    if (!tab) return;
+    
+    cJSON *levers = cJSON_GetObjectItem(tab, "levers");
+    if (!levers || !cJSON_IsArray(levers)) return;
+    
+    cJSON *lever = cJSON_GetArrayItem(levers, c->lever_idx);
+    if (!lever) return;
+    
+    cJSON *newitem = cJSON_CreateBool(c->value);
+    if (cJSON_HasObjectItem(lever, c->key)) {
+        cJSON_ReplaceItemInObjectCaseSensitive(lever, c->key, newitem);
+    } else {
+        cJSON_AddItemToObject(lever, c->key, newitem);
+    }
+}
+
+esp_err_t config_manager_update_lever_bool(int tab_idx, int lever_idx, const char *key, bool value) {
+    struct lever_bool_update_ctx ctx = {tab_idx, lever_idx, key, value};
+    return update_config_with_cjson(update_lever_bool_cb, &ctx, false);
+}
+
 void config_manager_set_on_change(config_change_cb_t cb) {
     on_config_change = cb;
 }
@@ -537,4 +653,5 @@ void config_manager_deinit(void) {
         free_dynamic_config(&active_dynamic_config);
         is_using_dynamic = false;
     }
+    config_manager_free_pending();
 }

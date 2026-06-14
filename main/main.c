@@ -6,9 +6,10 @@
 #include "web_server.h"
 #include "esp_log.h"
 #include "openlcb_integration.h"
+#include <string.h>
 
 static const char *TAG = "main";
-static lv_obj_t *system_tabview = NULL;
+lv_obj_t *system_tabview = NULL;
 
 static lv_obj_t *remote_config_overlay = NULL;
 static lv_timer_t *remote_config_timer = NULL;
@@ -53,7 +54,7 @@ void ui_show_remote_config_overlay(void) {
 static lv_obj_t *info_overlay = NULL;
 static lv_obj_t *info_dimmer = NULL;
 
-static void drawer_anim_ready_cb(lv_anim_t * a) {
+static void info_overlay_close_immediate(void) {
     if (info_overlay) {
         lv_obj_del(info_overlay);
         info_overlay = NULL;
@@ -62,6 +63,28 @@ static void drawer_anim_ready_cb(lv_anim_t * a) {
         lv_obj_del(info_dimmer);
         info_dimmer = NULL;
     }
+}
+
+static void info_overlay_anim_ready_cb(lv_anim_t * a) {
+    info_overlay_close_immediate();
+}
+
+static void settings_global_lcc_cb(lv_event_t *e) {
+    lv_obj_t *sw = lv_event_get_target(e);
+    bool is_on = lv_obj_has_state(sw, LV_STATE_CHECKED);
+    config_manager_update_global_bool("lcc_enabled", is_on);
+}
+
+static void settings_policy_cb(lv_event_t *e) {
+    lv_obj_t *dd = lv_event_get_target(e);
+    int policy = lv_dropdown_get_selected(dd);
+    config_manager_update_global_int("conflict_policy", policy);
+}
+
+static void settings_startup_cb(lv_event_t *e) {
+    lv_obj_t *dd = lv_event_get_target(e);
+    int selected = lv_dropdown_get_selected(dd);
+    config_manager_update_global_bool("restore_last_state", (selected == 0));
 }
 
 static void info_overlay_click_cb(lv_event_t * e) {
@@ -73,7 +96,7 @@ static void info_overlay_click_cb(lv_event_t * e) {
         lv_anim_set_time(&a, 300);
         lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_obj_set_y);
         lv_anim_set_path_cb(&a, lv_anim_path_ease_in);
-        lv_anim_set_ready_cb(&a, drawer_anim_ready_cb);
+        lv_anim_set_ready_cb(&a, info_overlay_anim_ready_cb);
         lv_anim_start(&a);
         
         lv_obj_remove_flag(info_overlay, LV_OBJ_FLAG_CLICKABLE);
@@ -114,7 +137,7 @@ static void ui_show_info_overlay(void) {
     lv_obj_add_event_cb(info_dimmer, info_overlay_click_cb, LV_EVENT_GESTURE, NULL);
 
     info_overlay = lv_obj_create(lv_scr_act());
-    lv_obj_set_size(info_overlay, LV_PCT(100), LV_PCT(85));
+    lv_obj_set_size(info_overlay, LV_PCT(100), LV_PCT(95));
     lv_obj_align(info_overlay, LV_ALIGN_TOP_MID, 0, 0);
     
     // Theme
@@ -126,24 +149,21 @@ static void ui_show_info_overlay(void) {
     lv_obj_set_style_border_width(info_overlay, 4, 0);
     lv_obj_set_style_border_color(info_overlay, lv_color_hex(0x0078D7), 0);
     
+    // Flex Layout
+    lv_obj_set_layout(info_overlay, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_flow(info_overlay, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(info_overlay, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    lv_obj_set_style_pad_all(info_overlay, 15, 0);
+    
     const lever_system_config_t *curr_config = config_manager_get_current();
     const char *ap_password = (curr_config && curr_config->wifi_password && strlen(curr_config->wifi_password) > 0) ? curr_config->wifi_password : "signalman";
-    
-    const char *policy_str = "Strict Local";
-    if (curr_config->conflict_policy == INTERLOCK_POLICY_NETWORK_OVERRIDE) policy_str = "Network Override";
-    else if (curr_config->conflict_policy == INTERLOCK_POLICY_ALARM) policy_str = "Alarm Mode";
-    
-    const char *startup_str = curr_config->restore_last_state ? "Restore Last State" : "Safe Default State";
-    const char *lcc_str = curr_config->lcc_enabled ? "Enabled" : "Disabled";
 
     lv_obj_t *title = lv_label_create(info_overlay);
     lv_label_set_text(title, "System Information");
     lv_obj_set_style_text_color(title, lv_color_hex(0xFFFFFF), 0);
-    lv_obj_align(title, LV_ALIGN_TOP_MID, 0, 15);
     
     lv_obj_t *table = lv_obj_create(info_overlay);
     lv_obj_set_size(table, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-    lv_obj_center(table);
     lv_obj_set_style_bg_opa(table, 0, 0);
     lv_obj_set_style_border_width(table, 0, 0);
     lv_obj_set_style_pad_all(table, 0, 0);
@@ -162,16 +182,72 @@ static void ui_show_info_overlay(void) {
     
     lv_obj_t *spacer = lv_obj_create(table);
     lv_obj_remove_style_all(spacer);
-    lv_obj_set_size(spacer, 10, 15);
+    lv_obj_set_size(spacer, 10, 5);
     
-    ui_add_drawer_row(table, "LCC Master:", lcc_str, 0x0078D7);
-    ui_add_drawer_row(table, "Override Policy:", policy_str, 0x0078D7);
-    ui_add_drawer_row(table, "Startup Mode:", startup_str, 0x0078D7);
+    // Interactive LCC Master
+    lv_obj_t *lcc_row = lv_obj_create(table);
+    lv_obj_set_size(lcc_row, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_style_bg_opa(lcc_row, 0, 0);
+    lv_obj_set_style_border_width(lcc_row, 0, 0);
+    lv_obj_set_style_pad_all(lcc_row, 4, 0);
+    lv_obj_set_layout(lcc_row, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_flow(lcc_row, LV_FLEX_FLOW_ROW);
+    lv_obj_remove_flag(lcc_row, LV_OBJ_FLAG_SCROLLABLE);
+
+    lv_obj_t *lcc_lbl = lv_label_create(lcc_row);
+    lv_obj_set_width(lcc_lbl, 160);
+    lv_label_set_text(lcc_lbl, "LCC Master:");
+    lv_obj_set_style_text_color(lcc_lbl, lv_color_hex(0x0078D7), 0);
+
+    lv_obj_t *lcc_sw = lv_switch_create(lcc_row);
+    if (curr_config->lcc_enabled) lv_obj_add_state(lcc_sw, LV_STATE_CHECKED);
+    lv_obj_add_event_cb(lcc_sw, settings_global_lcc_cb, LV_EVENT_VALUE_CHANGED, NULL);
+    
+    // Interactive Override Policy
+    lv_obj_t *pol_row = lv_obj_create(table);
+    lv_obj_set_size(pol_row, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_style_bg_opa(pol_row, 0, 0);
+    lv_obj_set_style_border_width(pol_row, 0, 0);
+    lv_obj_set_style_pad_all(pol_row, 4, 0);
+    lv_obj_set_layout(pol_row, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_flow(pol_row, LV_FLEX_FLOW_ROW);
+    lv_obj_remove_flag(pol_row, LV_OBJ_FLAG_SCROLLABLE);
+
+    lv_obj_t *pol_lbl = lv_label_create(pol_row);
+    lv_obj_set_width(pol_lbl, 160);
+    lv_label_set_text(pol_lbl, "Override Policy:");
+    lv_obj_set_style_text_color(pol_lbl, lv_color_hex(0x0078D7), 0);
+
+    lv_obj_t *pol_dd = lv_dropdown_create(pol_row);
+    lv_obj_set_width(pol_dd, 180);
+    lv_dropdown_set_options(pol_dd, "Strict Local\nOverride Allowed");
+    lv_dropdown_set_selected(pol_dd, curr_config->conflict_policy);
+    lv_obj_add_event_cb(pol_dd, settings_policy_cb, LV_EVENT_VALUE_CHANGED, NULL);
+
+    // Interactive Startup Mode
+    lv_obj_t *start_row = lv_obj_create(table);
+    lv_obj_set_size(start_row, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+    lv_obj_set_style_bg_opa(start_row, 0, 0);
+    lv_obj_set_style_border_width(start_row, 0, 0);
+    lv_obj_set_style_pad_all(start_row, 4, 0);
+    lv_obj_set_layout(start_row, LV_LAYOUT_FLEX);
+    lv_obj_set_flex_flow(start_row, LV_FLEX_FLOW_ROW);
+    lv_obj_remove_flag(start_row, LV_OBJ_FLAG_SCROLLABLE);
+
+    lv_obj_t *start_lbl = lv_label_create(start_row);
+    lv_obj_set_width(start_lbl, 160);
+    lv_label_set_text(start_lbl, "Startup Mode:");
+    lv_obj_set_style_text_color(start_lbl, lv_color_hex(0x0078D7), 0);
+
+    lv_obj_t *start_dd = lv_dropdown_create(start_row);
+    lv_obj_set_width(start_dd, 180);
+    lv_dropdown_set_options(start_dd, "Restore Last\nSafe Default");
+    lv_dropdown_set_selected(start_dd, curr_config->restore_last_state ? 0 : 1);
+    lv_obj_add_event_cb(start_dd, settings_startup_cb, LV_EVENT_VALUE_CHANGED, NULL);
     
     lv_obj_t *footer = lv_label_create(info_overlay);
     lv_label_set_text(footer, "(Swipe Up or Tap to dismiss)");
     lv_obj_set_style_text_color(footer, lv_color_hex(0x888888), 0);
-    lv_obj_align(footer, LV_ALIGN_BOTTOM_MID, 0, -15);
     
     lv_obj_add_flag(info_overlay, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(info_overlay, info_overlay_click_cb, LV_EVENT_CLICKED, NULL);
@@ -198,19 +274,30 @@ static void screen_gesture_cb(lv_event_t * e) {
     }
 }
 
+static bool ui_rebuild_requested = false;
+
 static void rebuild_ui_timer_cb(lv_timer_t *timer)
 {
     static int state = 0;
     
     if (state == 0) {
+        if (!ui_rebuild_requested) return;
+        ui_rebuild_requested = false;
+        
         // Step 1: Turn off backlight and delete old UI to prevent tearing
         ESP_LOGI(TAG, "Config update: Turning off backlight and clearing UI");
         waveshare_rgb_lcd_bl_off();
+        
+        info_overlay_close_immediate();
+        lever_close_all_drawers();
         
         if (system_tabview) {
             lv_obj_del(system_tabview);
             system_tabview = NULL;
         }
+        
+        // Safe to free old configuration memory now that UI objects using it are deleted
+        config_manager_free_pending();
         
         state = 1;
     } else if (state == 1) {
@@ -226,20 +313,13 @@ static void rebuild_ui_timer_cb(lv_timer_t *timer)
         waveshare_rgb_lcd_bl_on();
         
         state = 0;
-        lv_timer_del(timer);
     }
 }
 
 static void on_configuration_changed(void)
 {
     ESP_LOGI(TAG, "Configuration changed! Scheduling UI rebuild...");
-    if (lvgl_port_lock(-1)) {
-        lv_timer_t *timer = lv_timer_create(rebuild_ui_timer_cb, 50, NULL);
-        if (timer) {
-            lv_timer_set_repeat_count(timer, -1);
-        }
-        lvgl_port_unlock();
-    }
+    ui_rebuild_requested = true;
 }
 
 void app_main(void)
@@ -255,8 +335,10 @@ void app_main(void)
     lv_obj_t *loading_scr = NULL;
     if (lvgl_port_lock(-1)) {
         loading_scr = lv_obj_create(lv_scr_act());
+        lv_obj_remove_style_all(loading_scr);
         lv_obj_set_size(loading_scr, LV_PCT(100), LV_PCT(100));
         lv_obj_set_style_bg_color(loading_scr, lv_color_hex(0x121212), 0);
+        lv_obj_set_style_bg_opa(loading_scr, LV_OPA_COVER, 0);
         
         lv_obj_t *loading_label = lv_label_create(loading_scr);
         lv_label_set_text(loading_label, "Connecting to Wi-Fi...");
@@ -264,6 +346,10 @@ void app_main(void)
         lv_obj_center(loading_label);
         lvgl_port_unlock();
     }
+    
+    // Give the RGB panel time to lock onto the sync signals before turning the backlight on.
+    // 500ms ensures the panel sync is perfectly stable, preventing horizontal image wrapping.
+    vTaskDelay(pdMS_TO_TICKS(500));
     ESP_ERROR_CHECK(waveshare_rgb_lcd_bl_on());
 
     // 2. Initialize configuration manager and load dynamic config
@@ -282,6 +368,9 @@ void app_main(void)
         if (loading_scr) {
             lv_obj_del(loading_scr);
         }
+        
+        lv_timer_t *rebuild_timer = lv_timer_create(rebuild_ui_timer_cb, 50, NULL);
+        lv_timer_set_repeat_count(rebuild_timer, -1);
         
         const lever_system_config_t *curr_config = config_manager_get_current();
         system_tabview = lever_system_create(lv_scr_act(), curr_config);

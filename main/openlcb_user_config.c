@@ -41,12 +41,12 @@
 const node_parameters_t openlcb_user_config_node_parameters = {
 
     // 1. snip
-    .snip.mfg_version = 1, // early spec has this as 1, later it was changed to be the number of null present in this section so 4.  must treat them the same
+    .snip.mfg_version = 4,
     .snip.name = "Robert Scott",
     .snip.model = "ESP32 LCC Lever Frame",
     .snip.hardware_version = "1.0.0",
     .snip.software_version = "1.0.0",
-    .snip.user_version = 4,
+    .snip.user_version = 2,
 
 
     // early spec has this as 1, later it was changed to be the number of null present in this section so 2.  must treat them the same

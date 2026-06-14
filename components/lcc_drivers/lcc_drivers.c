@@ -19,6 +19,7 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
+#include "config_manager.h"
 
 
 #define CONFIG_MEM_SIZE 1024
@@ -80,47 +81,6 @@ void init_node_storage(void) {
             strncpy((char*)&config_memory_cache[63], DEFAULT_NODE_DESCRIPTION, 63);
         }
 
-        node_config_memory_t* cfg = (node_config_memory_t*)config_memory_cache;
-
-        cfg->hardware.pca9685_addr = DEFAULT_PCA9685_ADDR;
-        cfg->hardware.mcp23016_addr = DEFAULT_MCP23017_ADDR;
-        cfg->hardware.sda_pin = DEFAULT_SDA_PIN;
-        cfg->hardware.scl_pin = DEFAULT_SCL_PIN;
-        cfg->hardware.i2c_frequency = __builtin_bswap32(DEFAULT_I2C_FREQUENCY);
-
-        uint8_t node_id_bytes[6] = {
-            (uint8_t)(NODE_ID >> 40),
-            (uint8_t)(NODE_ID >> 32),
-            (uint8_t)(NODE_ID >> 24),
-            (uint8_t)(NODE_ID >> 16),
-            (uint8_t)(NODE_ID >> 8),
-            (uint8_t)(NODE_ID)
-        };
-
-
-        for (uint8_t i = 0; i < 16; i++) {
-            cfg->servos[i].closed_pos = DEFAULT_SERVO_CLOSED_POS;
-            cfg->servos[i].thrown_pos = DEFAULT_SERVO_THROWN_POS;
-            cfg->servos[i].speed = DEFAULT_SERVO_SPEED;
-            cfg->switches[i].mode = DEFAULT_SWITCH_MODE;
-
-            memcpy(cfg->servos[i].closed_event.bytes, node_id_bytes, 6);
-            cfg->servos[i].closed_event.bytes[6] = 0x00; // 0x00 group for Servos
-            cfg->servos[i].closed_event.bytes[7] = i * 2;
-
-            memcpy(cfg->servos[i].thrown_event.bytes, node_id_bytes, 6);
-            cfg->servos[i].thrown_event.bytes[6] = 0x00;
-            cfg->servos[i].thrown_event.bytes[7] = (i * 2) + 1;
-
-            memcpy(cfg->switches[i].active_event.bytes, node_id_bytes, 6);
-            cfg->switches[i].active_event.bytes[6] = 0x01; // 0x01 group for Switches
-            cfg->switches[i].active_event.bytes[7] = i * 2;
-
-            memcpy(cfg->switches[i].inactive_event.bytes, node_id_bytes, 6);
-            cfg->switches[i].inactive_event.bytes[6] = 0x01;
-            cfg->switches[i].inactive_event.bytes[7] = (i * 2) + 1;
-        }
-
         // Push defaults to NVS
         nvs_set_blob(my_handle, "config_mem", config_memory_cache, CONFIG_MEM_SIZE);
         nvs_commit(my_handle);
@@ -160,6 +120,15 @@ void lcc_drivers_unlock_shared_resources(void) {
         uint8_t *buf = (uint8_t *)buffer;
 
         lcc_drivers_lock_shared_resources();
+        
+        // Sync FROM config manager to cache before read
+        const lever_system_config_t *curr = config_manager_get_current();
+        if (curr) {
+            config_memory_cache[127] = curr->lcc_enabled ? 1 : 0;
+            config_memory_cache[128] = curr->restore_last_state ? 1 : 0;
+            config_memory_cache[129] = (uint8_t)curr->conflict_policy;
+        }
+        
         memcpy(buf, &config_memory_cache[address], count);
         lcc_drivers_unlock_shared_resources();
 
@@ -192,6 +161,13 @@ void lcc_drivers_unlock_shared_resources(void) {
             config_memory_cache[126] = '\0'; // End of description (CDI size 64)
 
             save_config_to_nvs();
+            
+            // Sync TO config manager if the global settings were modified
+            if (address <= 129 && (address + count) > 127) {
+                config_manager_update_global_bool("lcc_enabled", config_memory_cache[127] != 0);
+                config_manager_update_global_bool("restore_last_state", config_memory_cache[128] != 0);
+                config_manager_update_global_int("conflict_policy", config_memory_cache[129]);
+            }
         }
 
         return count;

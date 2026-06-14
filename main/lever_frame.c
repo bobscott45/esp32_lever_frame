@@ -1,4 +1,5 @@
 #include "lever_frame.h"
+#include "config_manager.h"
 
 lv_obj_t *lever_frame_create(lv_obj_t *parent) {
     lv_obj_t *frame = lv_obj_create(parent);
@@ -125,7 +126,7 @@ lv_obj_t *lever_system_create(lv_obj_t *parent, const lever_system_config_t *con
             lv_obj_set_style_border_color(btn, lv_color_hex(0x555555), LV_STATE_DEFAULT);
             lv_obj_set_style_border_width(btn, 1, LV_STATE_DEFAULT);
             lv_obj_set_style_radius(btn, 4, LV_STATE_DEFAULT);
-            lv_obj_set_style_pad_all(btn, 12, LV_STATE_DEFAULT); // More padding for bigger tabs
+            lv_obj_set_style_pad_all(btn, 6, LV_STATE_DEFAULT); // Less padding to fit all tabs
             
             extern const lv_font_t lv_font_montserrat_16;
             lv_obj_set_style_text_font(btn, &lv_font_montserrat_16, LV_STATE_DEFAULT);

@@ -37,5 +37,6 @@ lv_obj_t *lever_create(lv_obj_t *parent, const void *lever_def_ptr, uint8_t labe
 void lever_set_locked(lv_obj_t *wrapper, bool locked);
 void lever_set_state_labels(lv_obj_t *wrapper, const char *up_text, const char *down_text);
 void lever_frame_update_system_locks(lv_obj_t *frame);
+void lever_close_all_drawers(void);
 
 #endif //LVGL_TEST_LEVER_H

@@ -46,15 +46,6 @@
 
 #define DEFAULT_NODE_USER_NAME "LCC Lever Frame Node"
 #define DEFAULT_NODE_DESCRIPTION "Interactive ESP32-S3 Touch Screen Lever Frame"
-#define DEFAULT_PCA9685_ADDR 0x40
-#define DEFAULT_MCP23017_ADDR 0x20
-#define DEFAULT_SDA_PIN 25
-#define DEFAULT_SCL_PIN 26
-#define DEFAULT_I2C_FREQUENCY 100000
-#define DEFAULT_SERVO_CLOSED_POS 90
-#define DEFAULT_SERVO_THROWN_POS 120
-#define DEFAULT_SERVO_SPEED 19
-#define DEFAULT_SWITCH_MODE 0
 
 // =============================================================================
 // Transport Selection -- exactly one must be defined
@@ -180,40 +171,11 @@ extern const struct node_parameters_TAG openlcb_user_config_node_parameters;
   #pragma pack(push, 1)
 
     typedef struct {
-        uint8_t bytes[8];
-    } lcc_event_id_t;
-
-    typedef struct {
-        lcc_event_id_t closed_event; // Offset +0
-        lcc_event_id_t thrown_event; // Offset +8
-        uint8_t closed_pos;         // Offset +16
-        uint8_t thrown_pos;         // Offset +17
-        uint8_t speed;              // Offset +18 (total: 19 bytes)
-    } servo_config_t;
-
-    typedef struct {
-        lcc_event_id_t active_event;   // Offset +0
-        lcc_event_id_t inactive_event; // Offset +8
-        uint8_t mode;                  // Offset +16 (total: 17 bytes)
-    } switch_config_t;
-
-    typedef struct {
-        uint8_t pca9685_addr;   // Offset +0 (I2C default 0x40)
-        uint8_t mcp23016_addr;  // Offset +1 (I2C default 0x20)
-        uint8_t sda_pin;        // Offset +2
-        uint8_t scl_pin;        // Offset +3
-        uint32_t i2c_frequency; // Offset +4 (total: 8 bytes)
-    } hardware_settings_t;
-
-    typedef struct {
         char node_name[63];           // Offset 0 (Size 63)
         char node_description[64];    // Offset 63 (Size 64)
-        hardware_settings_t hardware; // Offset 127 (Size 8)
-        servo_config_t servos[16];    // Offset 135 (Size 16 * 19 = 304)
-        switch_config_t switches[16]; // Offset 439 (Size 16 * 17 = 272)
 
         // Padded to 1024 bytes for page-aligned allocation and headroom
-        uint8_t padding[313];         // Offset 711
+        uint8_t padding[897];         // Offset 127
     } node_config_memory_t;
 
     #pragma pack(pop)

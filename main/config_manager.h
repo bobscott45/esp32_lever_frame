@@ -45,9 +45,29 @@ char *config_manager_get_json_str(void);
 void config_manager_set_on_change(config_change_cb_t cb);
 
 /**
+ * @brief Free any pending configuration memory.
+ */
+void config_manager_free_pending(void);
+
+/**
  * @brief Clean up allocated configuration resources.
  */
 void config_manager_deinit(void);
+
+/**
+ * @brief Update a boolean setting globally.
+ */
+esp_err_t config_manager_update_global_bool(const char *key, bool value);
+
+/**
+ * @brief Update an integer setting globally.
+ */
+esp_err_t config_manager_update_global_int(const char *key, int value);
+
+/**
+ * @brief Update a boolean setting for a specific lever.
+ */
+esp_err_t config_manager_update_lever_bool(int tab_idx, int lever_idx, const char *key, bool value);
 
 // Helper conversions
 const char *lever_type_to_str(lever_type_t type);
