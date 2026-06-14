@@ -1,0 +1,220 @@
+/** @file openlcb_user_config.h
+ *  @brief User-editable project configuration for OpenLcbCLib
+ *
+ *  REQUIRED: Copy this file to your project's include path and edit.
+ *    Arduino:     place next to your .ino file (sketch dir is on include path)
+ *    PlatformIO:  place in src/ directory
+ *    STM32 Cube:  place in Core/Inc/ directory
+ *    CMake/Make:  place anywhere, add -I flag pointing to its directory
+ *
+ *  ALL values in this file are MANDATORY. The library will not compile if
+ *  any are missing. Edit the values to match your project's requirements.
+ *
+ *  --- Quick Recipes for Feature Flags ---
+ *
+ *  Simple sensor/button node (events only):
+ *    #define OPENLCB_COMPILE_EVENTS
+ *
+ *  Standard configurable node (events + config memory):
+ *    #define OPENLCB_COMPILE_EVENTS
+ *    #define OPENLCB_COMPILE_DATAGRAMS
+ *    #define OPENLCB_COMPILE_MEMORY_CONFIGURATION
+ *
+ *  Train command station:
+ *    #define OPENLCB_COMPILE_EVENTS
+ *    #define OPENLCB_COMPILE_DATAGRAMS
+ *    #define OPENLCB_COMPILE_MEMORY_CONFIGURATION
+ *    #define OPENLCB_COMPILE_TRAIN
+ *    #define OPENLCB_COMPILE_TRAIN_SEARCH
+ *
+ *  --- Optional Add-on Protocols ---
+ *  Add these to any recipe above as needed:
+ *
+ *    #define OPENLCB_COMPILE_FIRMWARE          // firmware upgrade support
+ *    #define OPENLCB_COMPILE_STREAM            // stream transport for large transfers
+ *    #define OPENLCB_COMPILE_BROADCAST_TIME    // clock synchronization
+ *    #define OPENLCB_COMPILE_DCC_DETECTOR      // DCC detection protocol
+ *
+ *  Minimal bootloader (firmware upgrade only):
+ *    Use templates/bootloader/openlcb_user_config.h instead
+ */
+
+#ifndef __OPENLCB_USER_CONFIG__
+#define __OPENLCB_USER_CONFIG__
+
+#define NODE_ID    0x05010101A604
+
+#define DEFAULT_NODE_USER_NAME "LCC Servo Node"
+#define DEFAULT_NODE_DESCRIPTION "Supports 16 PCA9685 outputs and 16 MCP23017 inputs"
+#define DEFAULT_PCA9685_ADDR 0x40
+#define DEFAULT_MCP23017_ADDR 0x20
+#define DEFAULT_SDA_PIN 25
+#define DEFAULT_SCL_PIN 26
+#define DEFAULT_I2C_FREQUENCY 100000
+#define DEFAULT_SERVO_CLOSED_POS 90
+#define DEFAULT_SERVO_THROWN_POS 120
+#define DEFAULT_SERVO_SPEED 19
+#define DEFAULT_SWITCH_MODE 0
+
+// =============================================================================
+// Transport Selection -- exactly one must be defined
+// =============================================================================
+
+#define OPENLCB_COMPILE_CAN
+// #define OPENLCB_COMPILE_TCP
+
+// =============================================================================
+// Feature Flags -- uncomment to enable optional protocols
+// =============================================================================
+
+ #define OPENLCB_COMPILE_EVENTS
+ #define OPENLCB_COMPILE_DATAGRAMS
+ #define OPENLCB_COMPILE_MEMORY_CONFIGURATION
+ #define OPENLCB_COMPILE_FIRMWARE
+// #define OPENLCB_COMPILE_BROADCAST_TIME
+// #define OPENLCB_COMPILE_TRAIN
+// #define OPENLCB_COMPILE_TRAIN_SEARCH
+// #define OPENLCB_COMPILE_DCC_DETECTOR
+
+// =============================================================================
+// Debug -- uncomment to print feature summary during compilation
+// =============================================================================
+
+// #define OPENLCB_COMPILE_VERBOSE
+
+// =============================================================================
+// Core Message Buffer Pool
+// =============================================================================
+// The library uses a pool of message buffers of different sizes.  Tune these
+// for your platform's available RAM.  The total number of buffers is the sum
+// of all four types.  On 8-bit processors the total must not exceed 126.
+//
+//   BASIC    (16 bytes each)  -- most OpenLCB messages fit in this size
+//   DATAGRAM (72 bytes each)  -- datagram protocol messages
+//   SNIP     (256 bytes each) -- SNIP replies and Events with Payload
+//   STREAM   (USER_DEFINED_STREAM_BUFFER_LEN bytes each) -- stream data transfer
+
+#define USER_DEFINED_BASIC_BUFFER_DEPTH              32     // must be >= 1; enforced by compiler
+#define USER_DEFINED_DATAGRAM_BUFFER_DEPTH           4      // must be >= 1; enforced by compiler
+#define USER_DEFINED_SNIP_BUFFER_DEPTH               4      // must be >= 1; enforced by compiler
+#define USER_DEFINED_STREAM_BUFFER_DEPTH             1      // must be >= 1; enforced by compiler
+
+// =============================================================================
+// Stream Transport (requires OPENLCB_COMPILE_STREAM)
+// =============================================================================
+// STREAM_BUFFER_LEN is the maximum bytes per stream data frame this node can
+// accept.  The spec uses a 2-byte field so the protocol max is 65535.  During
+// negotiation the smaller of the two nodes' buffer sizes wins.
+//
+// MAX_CONCURRENT_ACTIVE_STREAMS controls how many streams can be open at the
+// same time across all nodes.  Each active stream uses a small state struct,
+// not a full payload buffer.  The expensive RAM is governed by
+// STREAM_BUFFER_DEPTH in the buffer pool above.
+#define USER_DEFINED_STREAM_BUFFER_LEN               256    // ignored and overridden to 1 if OPENLCB_COMPILE_STREAM is not defined
+#define USER_DEFINED_MAX_CONCURRENT_ACTIVE_STREAMS   1      // must be >= 1; enforced by compiler
+
+// =============================================================================
+// Virtual Node Allocation
+// =============================================================================
+// How many virtual nodes this device can host.  Most simple devices use 1.
+// Train command stations may need more (one per locomotive being controlled).
+
+#define USER_DEFINED_NODE_BUFFER_DEPTH               1      // must be >= 1; enforced by compiler
+
+// =============================================================================
+// Events (requires OPENLCB_COMPILE_EVENTS)
+// =============================================================================
+// Maximum number of produced/consumed events per node, and how many event ID
+// ranges each node can handle.  Ranges are used by protocols like Train Search
+// that work with contiguous blocks of event IDs.
+#define USER_DEFINED_PRODUCER_COUNT                  64     // must be >= 1; enforced by compiler
+#define USER_DEFINED_PRODUCER_RANGE_COUNT            5      // must be >= 1; enforced by compiler
+#define USER_DEFINED_CONSUMER_COUNT                  64     // must be >= 1; enforced by compiler
+#define USER_DEFINED_CONSUMER_RANGE_COUNT            5      // must be >= 1; enforced by compiler
+
+// =============================================================================
+// Configuration Memory (requires OPENLCB_COMPILE_MEMORY_CONFIGURATION)
+// =============================================================================
+//
+// The two address values tell the SNIP protocol where in your node's
+// configuration memory space the user-editable name and description strings
+// begin.  The standard layout puts the user name at address 0 and the user
+// description immediately after at byte 62:
+//   63 = LEN_SNIP_USER_NAME_BUFFER (63)
+
+// =============================================================================
+// Train Protocol (requires OPENLCB_COMPILE_TRAIN)
+// =============================================================================
+// TRAIN_NODE_COUNT        -- max simultaneous train nodes (often equals
+//                            NODE_BUFFER_DEPTH for a dedicated command station)
+// MAX_LISTENERS_PER_TRAIN -- max consist members (listener slots) per train
+// MAX_TRAIN_FUNCTIONS     -- number of DCC function outputs: 29 = F0 through F28
+
+#define USER_DEFINED_TRAIN_NODE_COUNT                4      // must be >= 1; enforced by compiler
+#define USER_DEFINED_MAX_LISTENERS_PER_TRAIN         6      // must be >= 1; enforced by compiler
+#define USER_DEFINED_MAX_TRAIN_FUNCTIONS             29     // must be >= 1; enforced by compiler
+
+// =============================================================================
+// Listener Alias Verification (requires OPENLCB_COMPILE_TRAIN)
+// =============================================================================
+// LISTENER_PROBE_TICK_INTERVAL  -- how many 100ms ticks between prober calls
+//                                  (1 = every 100ms, 2 = every 200ms, etc.)
+// LISTENER_PROBE_INTERVAL_TICKS -- 100ms ticks between probes of the SAME entry
+//                                  (250 = 25 seconds)
+// LISTENER_VERIFY_TIMEOUT_TICKS -- 100ms ticks to wait for AMD reply before
+//                                  declaring stale (30 = 3 seconds)
+
+#define USER_DEFINED_LISTENER_PROBE_TICK_INTERVAL    1
+#define USER_DEFINED_LISTENER_PROBE_INTERVAL_TICKS   250
+#define USER_DEFINED_LISTENER_VERIFY_TIMEOUT_TICKS   30
+
+
+
+// =============================================================================
+// Application-defined node parameters (forward-declared to avoid circular include)
+// =============================================================================
+
+
+extern const struct node_parameters_TAG openlcb_user_config_node_parameters;
+
+  #pragma pack(push, 1)
+
+    typedef struct {
+        uint8_t bytes[8];
+    } lcc_event_id_t;
+
+    typedef struct {
+        lcc_event_id_t closed_event; // Offset +0
+        lcc_event_id_t thrown_event; // Offset +8
+        uint8_t closed_pos;         // Offset +16
+        uint8_t thrown_pos;         // Offset +17
+        uint8_t speed;              // Offset +18 (total: 19 bytes)
+    } servo_config_t;
+
+    typedef struct {
+        lcc_event_id_t active_event;   // Offset +0
+        lcc_event_id_t inactive_event; // Offset +8
+        uint8_t mode;                  // Offset +16 (total: 17 bytes)
+    } switch_config_t;
+
+    typedef struct {
+        uint8_t pca9685_addr;   // Offset +0 (I2C default 0x40)
+        uint8_t mcp23016_addr;  // Offset +1 (I2C default 0x20)
+        uint8_t sda_pin;        // Offset +2
+        uint8_t scl_pin;        // Offset +3
+        uint32_t i2c_frequency; // Offset +4 (total: 8 bytes)
+    } hardware_settings_t;
+
+    typedef struct {
+        char node_name[63];           // Offset 0 (Size 63)
+        char node_description[64];    // Offset 63 (Size 64)
+        hardware_settings_t hardware; // Offset 127 (Size 8)
+        servo_config_t servos[16];    // Offset 135 (Size 16 * 19 = 304)
+        switch_config_t switches[16]; // Offset 439 (Size 16 * 17 = 272)
+
+        // Padded to 1024 bytes for page-aligned allocation and headroom
+        uint8_t padding[313];         // Offset 711
+    } node_config_memory_t;
+
+    #pragma pack(pop)
+#endif /* __OPENLCB_USER_CONFIG__ */

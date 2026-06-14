@@ -1,0 +1,3 @@
+[submodule "components/lcc/OpenLcbCLib"]
+	path = components/lcc/OpenLcbCLib
+	url = https://github.com/JimKueneman/OpenLcbCLib.git
