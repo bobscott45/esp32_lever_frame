@@ -5,6 +5,7 @@
 #include "config_manager.h"
 #include "web_server.h"
 #include "esp_log.h"
+#include "openlcb_integration.h"
 
 static const char *TAG = "main";
 static lv_obj_t *system_tabview = NULL;
@@ -113,7 +114,7 @@ static void ui_show_info_overlay(void) {
     lv_obj_add_event_cb(info_dimmer, info_overlay_click_cb, LV_EVENT_GESTURE, NULL);
 
     info_overlay = lv_obj_create(lv_scr_act());
-    lv_obj_set_size(info_overlay, LV_PCT(100), LV_PCT(70));
+    lv_obj_set_size(info_overlay, LV_PCT(100), LV_PCT(85));
     lv_obj_align(info_overlay, LV_ALIGN_TOP_MID, 0, 0);
     
     // Theme
@@ -152,7 +153,12 @@ static void ui_show_info_overlay(void) {
     
     ui_add_drawer_row(table, "Wi-Fi AP:", "Lever-Frame-Config", 0x0078D7);
     ui_add_drawer_row(table, "Password:", ap_password, 0x0078D7);
-    ui_add_drawer_row(table, "IP Address:", "192.168.4.1", 0x0078D7);
+    char sta_ip[32] = "Not Connected";
+    web_server_get_sta_ip(sta_ip, sizeof(sta_ip));
+    
+    ui_add_drawer_row(table, "Wi-Fi AP IP:", "192.168.4.1", 0x0078D7);
+    ui_add_drawer_row(table, "Home Wi-Fi IP:", sta_ip, 0x0078D7);
+    ui_add_drawer_row(table, "LCC TCP Port:", "12021", 0x0078D7);
     
     lv_obj_t *spacer = lv_obj_create(table);
     lv_obj_remove_style_all(spacer);
@@ -241,24 +247,42 @@ void app_main(void)
     esp_lcd_panel_handle_t panel = NULL;
     esp_lcd_touch_handle_t touch = NULL;
 
-    // 1. Initialize configuration manager and load dynamic config
+    // 1. Initialize hardware drivers and LVGL first
+    ESP_ERROR_CHECK(waveshare_esp32_s3_rgb_lcd_init(&panel, &touch));
+    ESP_ERROR_CHECK(lvgl_port_init(panel, touch));
+
+    // Show a Loading Splash Screen immediately
+    lv_obj_t *loading_scr = NULL;
+    if (lvgl_port_lock(-1)) {
+        loading_scr = lv_obj_create(lv_scr_act());
+        lv_obj_set_size(loading_scr, LV_PCT(100), LV_PCT(100));
+        lv_obj_set_style_bg_color(loading_scr, lv_color_hex(0x121212), 0);
+        
+        lv_obj_t *loading_label = lv_label_create(loading_scr);
+        lv_label_set_text(loading_label, "Connecting to Wi-Fi...");
+        lv_obj_set_style_text_color(loading_label, lv_color_hex(0xFFFFFF), 0);
+        lv_obj_center(loading_label);
+        lvgl_port_unlock();
+    }
+    ESP_ERROR_CHECK(waveshare_rgb_lcd_bl_on());
+
+    // 2. Initialize configuration manager and load dynamic config
     ESP_ERROR_CHECK(config_manager_init());
     config_manager_set_on_change(on_configuration_changed);
 
-    // 2. Initialize Wi-Fi softAP and start the configuration web server
+    // 3. Initialize Wi-Fi softAP and start the configuration web server
+    // (This triggers connection to Home Wi-Fi)
     ESP_ERROR_CHECK(web_server_start());
 
-    // 3. Initialize hardware drivers independently
-    ESP_ERROR_CHECK(waveshare_esp32_s3_rgb_lcd_init(&panel, &touch));
+    // 4. Initialize OpenLCB stack (This BLOCKS waiting for Wi-Fi)
+    openlcb_integration_init();
 
-    // 4. Initialize the LVGL port task loop with retrieved handles
-    ESP_ERROR_CHECK(lvgl_port_init(panel, touch));
-
-    // 5. Turn on the screen backlight
-    ESP_ERROR_CHECK(waveshare_rgb_lcd_bl_on());
-
-    // 6. Lock the port and build your UI from configuration
+    // 5. Build final UI from configuration
     if (lvgl_port_lock(-1)) {
+        if (loading_scr) {
+            lv_obj_del(loading_scr);
+        }
+        
         const lever_system_config_t *curr_config = config_manager_get_current();
         system_tabview = lever_system_create(lv_scr_act(), curr_config);
         

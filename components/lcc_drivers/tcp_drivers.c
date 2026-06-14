@@ -19,7 +19,7 @@ extern const openlcb_node_t *node;
 
 
 
-EventGroupHandle_t wifi_event_group;
+extern EventGroupHandle_t wifi_event_group;
 
 int active_tcp_socket = -1;
 
@@ -91,55 +91,7 @@ static void tcp_server_task(void *pvParameters) {
     }
 }
 
-static void wifi_event_handler(void* arg, esp_event_base_t event_base,
-                          int32_t event_id, void* event_data) {
-    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
-        esp_wifi_connect();
-    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        wifi_event_sta_disconnected_t* event = (wifi_event_sta_disconnected_t*) event_data;
-        ESP_LOGE(TAG, "WiFi Disconnected! Reason code: %d", event->reason);
 
-        // Auto-retry connection
-        esp_wifi_connect();
-    } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
-        ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
-        ESP_LOGI(TAG, "Got IP: " IPSTR, IP2STR(&event->ip_info.ip));
-        xEventGroupSetBits(wifi_event_group, WIFI_CONNECTED_BIT);
-    }
-}
-
-
-
-
-
-static bool init_wifi() {
-    ESP_LOGI(TAG, "Initializing WiFi");
-
-    ESP_ERROR_CHECK(esp_netif_init());
-    esp_netif_create_default_wifi_sta();
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-    //"ZENBQ16"
-    //"Juniper#1945",
-    wifi_config_t wifi_config = {
-        .sta = {
-            .ssid = "ZENBQ16",
-            .password = "Juniper#1945",
-            .threshold.authmode = WIFI_AUTH_WPA2_PSK,
-            .sae_pwe_h2e = WPA3_SAE_PWE_BOTH,
-            .pmf_cfg = {
-                .capable = true,
-                .required = false
-            },
-        },
-    };
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
-    esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, wifi_event_handler, NULL, NULL);
-    esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, wifi_event_handler, NULL, NULL);
-    ESP_ERROR_CHECK(esp_wifi_start());
-    return true;
-}
 
 
 
@@ -147,20 +99,13 @@ static bool init_wifi() {
 void tcp_driver_initialize(void) {
     ESP_LOGI(TAG, "Initializing TCP/IP driver");
     
-    esp_err_t err = esp_event_loop_create_default();
-    if (err != ESP_OK && err != ESP_ERR_INVALID_STATE) {
-        ESP_ERROR_CHECK(err);
-    }
-    wifi_event_group = xEventGroupCreate();
-    if (!wifi_event_group) {
-        ESP_LOGE(TAG, "Failed to create WiFi event group");
-        return;
-    }
-    
-    // Connect to the Wi-Fi network
-    init_wifi(); 
+    // Wi-Fi initialization is now handled by web_server.c
     ESP_LOGI(TAG, "Waiting for WiFi connection...");
-    xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_BIT, pdFALSE, pdTRUE, portMAX_DELAY);
+    if (wifi_event_group) {
+        xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_BIT, pdFALSE, pdTRUE, portMAX_DELAY);
+    } else {
+        ESP_LOGW(TAG, "wifi_event_group is NULL. TCP server may not have a connection.");
+    }
     ESP_LOGI(TAG, "WiFi Connected! Initializing OpenLCB Hub...");
     // Start the raw TCP server task instead of start_http_server()
     xTaskCreate(tcp_server_task, "openlcb_tcp", 4096, NULL, 5, NULL);

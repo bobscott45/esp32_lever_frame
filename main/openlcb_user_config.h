@@ -44,8 +44,8 @@
 
 #define NODE_ID    0x05010101A604
 
-#define DEFAULT_NODE_USER_NAME "LCC Servo Node"
-#define DEFAULT_NODE_DESCRIPTION "Supports 16 PCA9685 outputs and 16 MCP23017 inputs"
+#define DEFAULT_NODE_USER_NAME "LCC Lever Frame Node"
+#define DEFAULT_NODE_DESCRIPTION "Interactive ESP32-S3 Touch Screen Lever Frame"
 #define DEFAULT_PCA9685_ADDR 0x40
 #define DEFAULT_MCP23017_ADDR 0x20
 #define DEFAULT_SDA_PIN 25

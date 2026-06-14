@@ -120,6 +120,12 @@ static void free_dynamic_config(lever_system_config_t *config) {
     if (config->wifi_password) {
         free((void *)config->wifi_password);
     }
+    if (config->wifi_ssid) {
+        free((void *)config->wifi_ssid);
+    }
+    if (config->wifi_station_password) {
+        free((void *)config->wifi_station_password);
+    }
     memset(config, 0, sizeof(lever_system_config_t));
 }
 
@@ -247,6 +253,20 @@ static esp_err_t parse_json_to_config(const char *json_str, lever_system_config_
         out_config->wifi_password = strdup(wifi_pw_obj->valuestring);
     } else {
         out_config->wifi_password = NULL;
+    }
+    
+    cJSON *wifi_ssid_obj = cJSON_GetObjectItem(root, "wifi_ssid");
+    if (wifi_ssid_obj && cJSON_IsString(wifi_ssid_obj)) {
+        out_config->wifi_ssid = strdup(wifi_ssid_obj->valuestring);
+    } else {
+        out_config->wifi_ssid = NULL;
+    }
+
+    cJSON *wifi_sta_pw_obj = cJSON_GetObjectItem(root, "wifi_station_password");
+    if (wifi_sta_pw_obj && cJSON_IsString(wifi_sta_pw_obj)) {
+        out_config->wifi_station_password = strdup(wifi_sta_pw_obj->valuestring);
+    } else {
+        out_config->wifi_station_password = NULL;
     }
     
     cJSON *restore_obj = cJSON_GetObjectItem(root, "restore_last_state");
@@ -441,6 +461,18 @@ char *config_manager_get_json_str(void) {
         cJSON_AddStringToObject(root, "wifi_password", curr->wifi_password);
     } else {
         cJSON_AddStringToObject(root, "wifi_password", "signalman"); // Default
+    }
+    
+    if (curr->wifi_ssid) {
+        cJSON_AddStringToObject(root, "wifi_ssid", curr->wifi_ssid);
+    } else {
+        cJSON_AddStringToObject(root, "wifi_ssid", "ZENBQ16"); // Default fallback
+    }
+
+    if (curr->wifi_station_password) {
+        cJSON_AddStringToObject(root, "wifi_station_password", curr->wifi_station_password);
+    } else {
+        cJSON_AddStringToObject(root, "wifi_station_password", "Juniper#1945"); // Default fallback
     }
     
     cJSON_AddBoolToObject(root, "restore_last_state", curr->restore_last_state);

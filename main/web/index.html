@@ -520,6 +520,27 @@
                 <!-- Dynamically filled -->
             </div>
 
+            <!-- System Status Card -->
+            <div class="card" id="system-status-card">
+                <div class="card-header">
+                    <div class="card-title">System Status</div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 10px;">
+                    <div>
+                        <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: bold; margin-bottom: 4px;">AP IP Address</div>
+                        <div id="status-ap-ip" style="font-size: 16px; font-weight: 500;">-</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: bold; margin-bottom: 4px;">Home Wi-Fi IP</div>
+                        <div id="status-sta-ip" style="font-size: 16px; font-weight: 500;">-</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: bold; margin-bottom: 4px;">LCC TCP Port</div>
+                        <div id="status-tcp-port" style="font-size: 16px; font-weight: 500;">-</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- System Settings Card -->
             <div class="card">
                 <div class="card-header">
@@ -527,10 +548,10 @@
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
                     <div>
-                        <label for="wifi-password-input">Config Wi-Fi Password (WPA2)</label>
+                        <label for="wifi-password-input">AP Wi-Fi Password (WPA2)</label>
                         <div style="position: relative;">
                             <input type="password" id="wifi-password-input" oninput="updateWifiPassword(this.value)">
-                            <button type="button" onclick="togglePasswordVisibility()" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px;">👁</button>
+                            <button type="button" onclick="togglePasswordVisibility('wifi-password-input')" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px;">👁</button>
                         </div>
                     </div>
                     <div>
@@ -547,6 +568,19 @@
                             <option value="1">Central (Accept Override)</option>
                             <option value="2">Alarm Mode (Accept & Warn)</option>
                         </select>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                    <div>
+                        <label for="wifi-ssid-input">Home Wi-Fi SSID</label>
+                        <input type="text" id="wifi-ssid-input" oninput="updateWifiSsid(this.value)">
+                    </div>
+                    <div>
+                        <label for="wifi-sta-password-input">Home Wi-Fi Password</label>
+                        <div style="position: relative;">
+                            <input type="password" id="wifi-sta-password-input" oninput="updateWifiStaPassword(this.value)">
+                            <button type="button" onclick="togglePasswordVisibility('wifi-sta-password-input')" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 14px;">👁</button>
+                        </div>
                     </div>
                 </div>
                 <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border-color);">
@@ -635,6 +669,8 @@
         // Fetch current config on load
         window.addEventListener('DOMContentLoaded', () => {
             fetchConfig();
+            fetchStatus();
+            setInterval(fetchStatus, 5000); // Poll status every 5s
             
             // Keep-alive heartbeat so the ESP32 knows we are still configuring
             setInterval(async () => {
@@ -656,6 +692,20 @@
                 toast.style.transition = 'opacity 0.5s';
                 setTimeout(() => toast.remove(), 500);
             }, 3000);
+        }
+
+        async function fetchStatus() {
+            try {
+                const response = await fetch('/api/status');
+                if (response.ok) {
+                    const status = await response.json();
+                    document.getElementById('status-ap-ip').innerText = status.ap_ip || '-';
+                    document.getElementById('status-sta-ip').innerText = status.sta_ip || '-';
+                    document.getElementById('status-tcp-port').innerText = status.tcp_port || '-';
+                }
+            } catch (e) {
+                console.error("Error fetching status:", e);
+            }
         }
 
         async function fetchConfig() {
@@ -741,6 +791,8 @@
             }, 100);
 
             document.getElementById('wifi-password-input').value = configData.wifi_password || 'signalman';
+            document.getElementById('wifi-ssid-input').value = configData.wifi_ssid || 'ZENBQ16';
+            document.getElementById('wifi-sta-password-input').value = configData.wifi_station_password || 'Juniper#1945';
             const restoreSelect = document.getElementById('startup-mode-select');
             if (restoreSelect) {
                 restoreSelect.value = configData.restore_last_state === false ? "false" : "true";
@@ -972,6 +1024,14 @@
             configData.wifi_password = value;
             checkChanges();
         }
+        function updateWifiSsid(value) {
+            configData.wifi_ssid = value;
+            checkChanges();
+        }
+        function updateWifiStaPassword(value) {
+            configData.wifi_station_password = value;
+            checkChanges();
+        }
 
         function updateStartupMode(val) {
             configData.restore_last_state = (val === 'true');
@@ -988,8 +1048,8 @@
             checkChanges();
         }
 
-        function togglePasswordVisibility() {
-            const pwdInput = document.getElementById('wifi-password-input');
+        function togglePasswordVisibility(inputId) {
+            const pwdInput = document.getElementById(inputId);
             if (pwdInput.type === 'password') {
                 pwdInput.type = 'text';
             } else {

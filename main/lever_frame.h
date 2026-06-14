@@ -39,6 +39,8 @@ typedef struct {
     const tab_def_t *tabs;
     size_t tab_count;
     const char *wifi_password;
+    const char *wifi_ssid;
+    const char *wifi_station_password;
     bool restore_last_state;
     interlocking_conflict_policy_t conflict_policy;
     bool lcc_enabled;

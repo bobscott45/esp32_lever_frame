@@ -10,9 +10,8 @@
  */
 esp_err_t web_server_start(void);
 
-/**
- * @brief Stop the HTTP server and Wi-Fi interface.
- */
 void web_server_stop(void);
+
+void web_server_get_sta_ip(char *ip_buf, size_t buf_len);
 
 #endif // WEB_SERVER_H
