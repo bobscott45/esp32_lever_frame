@@ -217,6 +217,7 @@ static void ui_show_info_overlay(void) {
     lv_obj_set_style_text_color(lcc_lbl, lv_color_hex(0x0078D7), 0);
 
     lv_obj_t *lcc_sw = lv_switch_create(lcc_row);
+    lv_obj_set_style_anim_time(lcc_sw, 0, 0);
     if (curr_config->lcc_enabled) lv_obj_add_state(lcc_sw, LV_STATE_CHECKED);
     lv_obj_add_event_cb(lcc_sw, settings_global_lcc_cb, LV_EVENT_VALUE_CHANGED, NULL);
     

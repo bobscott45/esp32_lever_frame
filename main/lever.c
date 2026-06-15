@@ -454,6 +454,7 @@ static void brass_plate_click_cb(lv_event_t * e) {
     lv_obj_set_style_text_color(lbl_key, lv_color_hex(0x8a6327), 0);
 
     lv_obj_t *lcc_sw = lv_switch_create(row);
+    lv_obj_set_style_anim_time(lcc_sw, 0, 0);
     if (lever_def->lcc_enabled) {
         lv_obj_add_state(lcc_sw, LV_STATE_CHECKED);
     } else {
@@ -524,6 +525,7 @@ static lv_obj_t *static_label_create(lv_obj_t *parent, const char *text) {
 
 static lv_obj_t *lever_switch_create(lv_obj_t *parent, uint32_t type_color) {
     lv_obj_t *obj = lv_switch_create(parent);
+    lv_obj_set_style_anim_time(obj, 0, 0);
     lv_obj_set_width(obj, LEVER_WIDTH);
     lv_obj_set_flex_grow(obj, 1); // Stretch vertically between the labels
     lv_obj_set_style_base_dir(obj, LV_BASE_DIR_RTL, 0);
