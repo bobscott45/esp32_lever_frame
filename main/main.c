@@ -361,6 +361,10 @@ void app_main(void)
         lv_label_set_text(loading_label, "Connecting to Wi-Fi...");
         lv_obj_set_style_text_color(loading_label, lv_color_hex(0xFFFFFF), 0);
         lv_obj_center(loading_label);
+        
+        // Force layout update so the label is perfectly centered
+        lv_obj_update_layout(loading_scr);
+        
         lvgl_port_unlock();
     }
     
@@ -401,6 +405,9 @@ void app_main(void)
         // Register gesture on the active screen to pull down the Wi-Fi info overlay
         lv_obj_clear_flag(lv_scr_act(), LV_OBJ_FLAG_SCROLLABLE);
         lv_obj_add_event_cb(lv_scr_act(), screen_gesture_cb, LV_EVENT_GESTURE, NULL);
+        
+        // Force layout update before unlocking
+        lv_obj_update_layout(lv_scr_act());
         
         lvgl_port_unlock();
     }

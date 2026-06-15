@@ -29,8 +29,9 @@
 
 #define LEVER_WIDTH 60
 
-#define LEVER_LABEL_COLOR 0x000000
-#define LEVER_LABEL_BG_COLOR 0x8a6327 // Dark Antique Brass
+#define LEVER_LABEL_COLOR 0xd4af37
+#define LEVER_LABEL_BG_COLOR 0x1a1a1a // Industrial Black
+#define LEVER_LABEL_BORDER_COLOR 0xb8860b
 #define LEVER_LABEL_PADDING_Y 14
 
 #define LEVER_COLOR_HOME_SIGNAL    0x8f2727 // Darker Red

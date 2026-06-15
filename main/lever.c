@@ -351,7 +351,7 @@ static void lever_drawer_click_cb(lv_event_t * e) {
     }
 }
 
-static void ui_add_drawer_row(lv_obj_t *parent, const char *key, const char *val, uint32_t color) {
+static lv_obj_t* ui_add_drawer_row(lv_obj_t *parent, const char *key, const char *val, uint32_t color) {
     lv_obj_t *row = lv_obj_create(parent);
     lv_obj_set_size(row, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
     lv_obj_set_style_bg_opa(row, 0, 0);
@@ -369,6 +369,7 @@ static void ui_add_drawer_row(lv_obj_t *parent, const char *key, const char *val
     lv_obj_t *lbl_val = lv_label_create(row);
     lv_label_set_text(lbl_val, val);
     lv_obj_set_style_text_color(lbl_val, lv_color_hex(0xFFFFFF), 0);
+    return row;
 }
 
 static void brass_plate_click_cb(lv_event_t * e) {
@@ -385,7 +386,7 @@ static void brass_plate_click_cb(lv_event_t * e) {
     lv_obj_add_event_cb(lever_info_dimmer, lever_drawer_click_cb, LV_EVENT_GESTURE, NULL);
     
     lever_info_drawer = lv_obj_create(lv_scr_act());
-    lv_obj_set_size(lever_info_drawer, LV_PCT(100), LV_PCT(70));
+    lv_obj_set_size(lever_info_drawer, LV_PCT(100), LV_PCT(85));
     lv_obj_align(lever_info_drawer, LV_ALIGN_TOP_MID, 0, 0);
     
     lv_obj_set_style_bg_color(lever_info_drawer, lv_color_hex(0x222222), 0);
@@ -406,7 +407,7 @@ static void brass_plate_click_cb(lv_event_t * e) {
     
     lv_obj_t *table = lv_obj_create(lever_info_drawer);
     lv_obj_set_size(table, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-    lv_obj_center(table);
+    lv_obj_align(table, LV_ALIGN_TOP_MID, 0, 45);
     lv_obj_set_style_bg_opa(table, 0, 0);
     lv_obj_set_style_border_width(table, 0, 0);
     lv_obj_set_style_pad_all(table, 0, 0);
@@ -431,11 +432,16 @@ static void brass_plate_click_cb(lv_event_t * e) {
         if (target_idx >= 0 && tab_def && target_idx < tab_def->lever_count) {
             char rule_buf[64];
             snprintf(rule_buf, sizeof(rule_buf), "Lever %d %s", target_idx + 1, lever_def->conditions[i].required_state ? "REVERSED" : "NORMAL");
+            lv_obj_t *r = NULL;
             if (!has_rules) {
-                ui_add_drawer_row(table, "Requires:", rule_buf, 0x8a6327);
+                r = ui_add_drawer_row(table, "Requires:", rule_buf, 0x8a6327);
                 has_rules = true;
             } else {
-                ui_add_drawer_row(table, "And:", rule_buf, 0x8a6327);
+                r = ui_add_drawer_row(table, "And:", rule_buf, 0x8a6327);
+            }
+            if (r) {
+                lv_obj_set_style_pad_top(r, 0, 0);
+                lv_obj_set_style_pad_bottom(r, 0, 0);
             }
         }
     }
