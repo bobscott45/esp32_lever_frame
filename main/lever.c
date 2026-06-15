@@ -312,16 +312,7 @@ static lv_obj_t *switch_container_create(lv_obj_t *parent) {
 static lv_obj_t *lever_info_drawer = NULL;
 static lv_obj_t *lever_info_dimmer = NULL;
 
-static void lever_drawer_anim_ready_cb(lv_anim_t * a) {
-    if (lever_info_drawer) {
-        lv_obj_del(lever_info_drawer);
-        lever_info_drawer = NULL;
-    }
-    if (lever_info_dimmer) {
-        lv_obj_del(lever_info_dimmer);
-        lever_info_dimmer = NULL;
-    }
-}
+
 
 void lever_close_all_drawers(void) {
     if (lever_info_drawer) {
@@ -336,18 +327,12 @@ void lever_close_all_drawers(void) {
 
 static void lever_drawer_click_cb(lv_event_t * e) {
     if (lever_info_drawer) {
-        lv_anim_t a;
-        lv_anim_init(&a);
-        lv_anim_set_var(&a, lever_info_drawer);
-        lv_anim_set_values(&a, 0, -lv_obj_get_height(lever_info_drawer));
-        lv_anim_set_time(&a, 300);
-        lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_obj_set_y);
-        lv_anim_set_path_cb(&a, lv_anim_path_ease_in);
-        lv_anim_set_ready_cb(&a, lever_drawer_anim_ready_cb);
-        lv_anim_start(&a);
-        
-        lv_obj_remove_flag(lever_info_drawer, LV_OBJ_FLAG_CLICKABLE);
-        if (lever_info_dimmer) lv_obj_remove_flag(lever_info_dimmer, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_del(lever_info_drawer);
+        lever_info_drawer = NULL;
+    }
+    if (lever_info_dimmer) {
+        lv_obj_del(lever_info_dimmer);
+        lever_info_dimmer = NULL;
     }
 }
 
@@ -416,8 +401,7 @@ static void brass_plate_click_cb(lv_event_t * e) {
     lv_obj_remove_flag(table, LV_OBJ_FLAG_SCROLLABLE);
     
     // Store context for the callback and rule generation
-    lv_obj_t *plate = lv_event_get_target(e);
-    lv_obj_t *header = lv_obj_get_parent(plate);
+    lv_obj_t *header = lv_event_get_current_target(e);
     lv_obj_t *container = lv_obj_get_parent(header);
     lv_obj_t *wrapper = lv_obj_get_parent(container);
     lv_obj_t *frame = lv_obj_get_parent(wrapper);
@@ -495,18 +479,6 @@ static void brass_plate_click_cb(lv_event_t * e) {
     lv_obj_add_flag(lever_info_drawer, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(lever_info_drawer, lever_drawer_click_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_add_event_cb(lever_info_drawer, lever_drawer_click_cb, LV_EVENT_GESTURE, NULL);
-    
-    lv_anim_t a;
-    lv_anim_init(&a);
-    lv_anim_set_var(&a, lever_info_drawer);
-    lv_obj_update_layout(lever_info_drawer);
-    lv_coord_t h = lv_obj_get_height(lever_info_drawer);
-    lv_obj_set_y(lever_info_drawer, -h);
-    lv_anim_set_values(&a, -h, 0);
-    lv_anim_set_time(&a, 300);
-    lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_obj_set_y);
-    lv_anim_set_path_cb(&a, lv_anim_path_ease_out);
-    lv_anim_start(&a);
 }
 
 static lv_obj_t *lever_label_create(lv_obj_t *parent, const lever_def_t *lever_def, uint8_t label_height) {
@@ -516,9 +488,7 @@ static lv_obj_t *lever_label_create(lv_obj_t *parent, const lever_def_t *lever_d
     lv_obj_set_height(plate, label_height); // Uniform height to accommodate multi-line text
     lv_obj_remove_flag(plate, LV_OBJ_FLAG_SCROLLABLE);
     
-    // Make plate clickable
-    lv_obj_add_flag(plate, LV_OBJ_FLAG_CLICKABLE);
-    lv_obj_add_event_cb(plate, brass_plate_click_cb, LV_EVENT_CLICKED, (void *)lever_def);
+    lv_obj_remove_flag(plate, LV_OBJ_FLAG_CLICKABLE); // Let clicks pass through to header
     
     // Style the plate
     lv_obj_set_style_bg_color(plate, lv_color_hex(LEVER_LABEL_BG_COLOR), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -668,6 +638,9 @@ lv_obj_t *lever_create(lv_obj_t *parent, const void *lever_def_ptr, uint8_t labe
     
     // Group the top label and the color bar together
     lv_obj_t *header = header_container_create(container);
+    lv_obj_add_flag(header, LV_OBJ_FLAG_CLICKABLE);
+    lv_obj_add_event_cb(header, brass_plate_click_cb, LV_EVENT_CLICKED, (void *)lever_def);
+    
     lever_label_create(header, lever_def, label_height);
     color_bar_create(header, type_color);
     
