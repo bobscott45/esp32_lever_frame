@@ -24,7 +24,7 @@ To bridge the wireless Wi-Fi LCC events from this device to a physical CAN-based
 Assuming you have your USB-to-CAN adapter configured and working in JMRI:
 1. In the main JMRI window (PanelPro or DecoderPro), go to the **LCC** menu (or **OpenLCB** depending on your connection prefix).
 2. Click on **Start Hub** (or "LCC Hub"). This starts a GridConnect TCP server (usually on TCP port 12021) that bridges the network to your CAN bus.
-3. In the Lever Frame's Web Configuration Interface, set the network settings to connect to your JMRI computer's IP address on port `12021`.
+3. In the Lever Frame's Web Configuration Interface, ensure the Wi-Fi is connected to the same network as the JMRI computer.
 
 ## Getting Started
 
