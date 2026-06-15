@@ -4,7 +4,8 @@ An ESP32-based application specifically designed for the **Waveshare ESP32-S3-To
 
 ## Hardware Requirements
 
-* **Waveshare ESP32-S3-Touch-LCD-4.3** display module.
+* **Waveshare ESP32-S3-Touch-LCD-4.3** display module (Part Number/SKU: **25948**).
+  * **IMPORTANT:** This project is specifically designed for the *original* standard version of this display. It is **NOT** compatible with the "B" (ESP32-S3-Touch-LCD-4.3B) or "C" (ESP32-S3-Touch-LCD-4.3C) variants due to differences in their hardware and interface configurations.
 
 ## Key Features
 
