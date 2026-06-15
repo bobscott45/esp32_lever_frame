@@ -366,7 +366,7 @@ static void brass_plate_click_cb(lv_event_t * e) {
     lv_obj_remove_style_all(lever_info_dimmer);
     lv_obj_set_size(lever_info_dimmer, LV_PCT(100), LV_PCT(100));
     lv_obj_set_style_bg_color(lever_info_dimmer, lv_color_hex(0x000000), 0);
-    lv_obj_set_style_bg_opa(lever_info_dimmer, LV_OPA_60, 0);
+    lv_obj_set_style_bg_opa(lever_info_dimmer, LV_OPA_COVER, 0);
     lv_obj_add_flag(lever_info_dimmer, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(lever_info_dimmer, lever_drawer_click_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_add_event_cb(lever_info_dimmer, lever_drawer_click_cb, LV_EVENT_GESTURE, NULL);
