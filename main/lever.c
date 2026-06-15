@@ -85,6 +85,28 @@ static bool interlocking_check(lv_obj_t *sw, bool target_state_thrown) {
                 return false; // Dependency failed
             }
         }
+        
+        // We must ALSO check if any OTHER thrown lever requires us to remain Normal!
+        for (int i = 0; i < tab_def->lever_count; i++) {
+            if (i == lever_index) continue;
+            
+            lv_obj_t *other_wrapper = lv_obj_get_child(frame, i);
+            lv_obj_t *other_container = lv_obj_get_child(other_wrapper, 0);
+            lv_obj_t *other_switch_group = lv_obj_get_child(other_container, 1);
+            lv_obj_t *other_sw = lv_obj_get_child(other_switch_group, 1);
+            
+            if (lv_obj_has_state(other_sw, LV_STATE_CHECKED)) {
+                const lever_def_t *other_def = &tab_def->levers[i];
+                for (int c = 0; c < MAX_INTERLOCKING_CONDITIONS; c++) {
+                    int target_idx = other_def->conditions[c].target_lever_index;
+                    if (target_idx < 0) break;
+                    
+                    if (target_idx == lever_index && other_def->conditions[c].required_state == false) {
+                        return false; // Another thrown lever requires us to be Normal
+                    }
+                }
+            }
+        }
     } else {
         // We are trying to normalize this lever. Check if any OTHER thrown lever requires us to be thrown!
         for (int i = 0; i < tab_def->lever_count; i++) {
