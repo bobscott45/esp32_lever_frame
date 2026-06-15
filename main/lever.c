@@ -168,14 +168,15 @@ static void lever_update_system_lock_ui(lv_obj_t *sw) {
     if (collar_btn) {
         lv_obj_t *collar_lbl = lv_obj_get_child(collar_btn, 0);
         if (collar_lbl) {
+            const char *current_text = lv_label_get_text(collar_lbl);
             if (manual_locked) {
-                lv_label_set_text(collar_lbl, "LOCKED");
+                if (strcmp(current_text, "LOCKED") != 0) lv_label_set_text(collar_lbl, "LOCKED");
                 lv_obj_clear_state(collar_btn, LV_STATE_DISABLED);
             } else if (system_locked) {
-                lv_label_set_text(collar_lbl, "INTERLOCK");
+                if (strcmp(current_text, "INTERLOCK") != 0) lv_label_set_text(collar_lbl, "INTERLOCK");
                 lv_obj_clear_state(collar_btn, LV_STATE_DISABLED);
             } else {
-                lv_label_set_text(collar_lbl, "UNLOCKED");
+                if (strcmp(current_text, "UNLOCKED") != 0) lv_label_set_text(collar_lbl, "UNLOCKED");
                 lv_obj_clear_state(collar_btn, LV_STATE_DISABLED);
             }
         }
@@ -728,7 +729,11 @@ void lever_set_locked(lv_obj_t *wrapper, bool locked) {
         // Force the button to LOCKED and make it unclickable
         if (collar_btn) {
             lv_obj_add_state(collar_btn, LV_STATE_CHECKED | LV_STATE_DISABLED);
-            if (collar_lbl) lv_label_set_text(collar_lbl, "LOCKED");
+            if (collar_lbl) {
+                if (strcmp(lv_label_get_text(collar_lbl), "LOCKED") != 0) {
+                    lv_label_set_text(collar_lbl, "LOCKED");
+                }
+            }
         }
     } else {
         lv_obj_add_flag(sw, LV_OBJ_FLAG_CLICKABLE);
@@ -737,7 +742,11 @@ void lever_set_locked(lv_obj_t *wrapper, bool locked) {
         // Restore button to UNLOCKED and make it clickable again
         if (collar_btn) {
             lv_obj_clear_state(collar_btn, LV_STATE_CHECKED | LV_STATE_DISABLED);
-            if (collar_lbl) lv_label_set_text(collar_lbl, "UNLOCKED");
+            if (collar_lbl) {
+                if (strcmp(lv_label_get_text(collar_lbl), "UNLOCKED") != 0) {
+                    lv_label_set_text(collar_lbl, "UNLOCKED");
+                }
+            }
         }
     }
 }
