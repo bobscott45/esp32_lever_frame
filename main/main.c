@@ -365,8 +365,8 @@ void app_main(void)
     }
     
     // Give the RGB panel time to lock onto the sync signals before turning the backlight on.
-    // 500ms ensures the panel sync is perfectly stable, preventing horizontal image wrapping.
-    vTaskDelay(pdMS_TO_TICKS(500));
+    // 1500ms ensures the panel sync is perfectly stable, preventing horizontal image wrapping.
+    vTaskDelay(pdMS_TO_TICKS(1500));
     ESP_ERROR_CHECK(waveshare_rgb_lcd_bl_on());
 
     // 2. Initialize configuration manager and load dynamic config

@@ -414,7 +414,34 @@ static void brass_plate_click_cb(lv_event_t * e) {
     lv_obj_set_flex_flow(table, LV_FLEX_FLOW_COLUMN);
     lv_obj_remove_flag(table, LV_OBJ_FLAG_SCROLLABLE);
     
+    // Store context for the callback and rule generation
+    lv_obj_t *plate = lv_event_get_target(e);
+    lv_obj_t *header = lv_obj_get_parent(plate);
+    lv_obj_t *container = lv_obj_get_parent(header);
+    lv_obj_t *wrapper = lv_obj_get_parent(container);
+    lv_obj_t *frame = lv_obj_get_parent(wrapper);
+    lv_obj_t *tab = lv_obj_get_parent(frame);
+    const tab_def_t *tab_def = (const tab_def_t *)lv_obj_get_user_data(frame);
+    
     ui_add_drawer_row(table, "Label:", lever_def->label, 0x8a6327);
+    
+    bool has_rules = false;
+    for (int i = 0; i < MAX_INTERLOCKING_CONDITIONS; i++) {
+        int target_idx = lever_def->conditions[i].target_lever_index;
+        if (target_idx >= 0 && tab_def && target_idx < tab_def->lever_count) {
+            char rule_buf[64];
+            snprintf(rule_buf, sizeof(rule_buf), "Lever %d %s", target_idx + 1, lever_def->conditions[i].required_state ? "REVERSED" : "NORMAL");
+            if (!has_rules) {
+                ui_add_drawer_row(table, "Requires:", rule_buf, 0x8a6327);
+                has_rules = true;
+            } else {
+                ui_add_drawer_row(table, "And:", rule_buf, 0x8a6327);
+            }
+        }
+    }
+    if (!has_rules) {
+        ui_add_drawer_row(table, "Requires:", "None", 0x8a6327);
+    }
     
     lv_obj_t *spacer = lv_obj_create(table);
     lv_obj_remove_style_all(spacer);
@@ -443,13 +470,7 @@ static void brass_plate_click_cb(lv_event_t * e) {
         lv_obj_clear_state(lcc_sw, LV_STATE_CHECKED);
     }
     
-    // Store context for the callback
-    lv_obj_t *plate = lv_event_get_target(e);
-    lv_obj_t *header = lv_obj_get_parent(plate);
-    lv_obj_t *container = lv_obj_get_parent(header);
-    lv_obj_t *wrapper = lv_obj_get_parent(container);
-    lv_obj_t *frame = lv_obj_get_parent(wrapper);
-    lv_obj_t *tab = lv_obj_get_parent(frame);
+    // Context already retrieved above
     
     static int ctx_indices[2];
     ctx_indices[0] = lv_obj_get_index(tab);
