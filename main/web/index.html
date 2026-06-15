@@ -622,7 +622,11 @@
             <div class="card">
                 <div class="card-header">
                     <div class="card-title">Levers Configuration</div>
-                    <button class="btn btn-primary btn-small" onclick="addNewLever()">+ Add Lever</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-small" onclick="toggleAllAdvanced(true)">Expand All</button>
+                        <button class="btn btn-small" onclick="toggleAllAdvanced(false)">Collapse All</button>
+                        <button class="btn btn-primary btn-small" onclick="addNewLever()">+ Add Lever</button>
+                    </div>
                 </div>
                 
                 <div class="lever-editor-list" id="levers-editor-list">
@@ -1158,6 +1162,18 @@
         function updateRuleTarget(leverIdx, ruleIdx, val) {
             configData.tabs[activeTabIdx].levers[leverIdx].interlocking[ruleIdx].target = val;
             checkChanges();
+        }
+
+        function toggleAllAdvanced(expand) {
+            const listContainer = document.getElementById('levers-editor-list');
+            const detailsElements = listContainer.querySelectorAll('details');
+            detailsElements.forEach(d => {
+                if (expand) {
+                    d.setAttribute('open', '');
+                } else {
+                    d.removeAttribute('open');
+                }
+            });
         }
 
         function updateRuleState(leverIdx, ruleIdx, val) {
