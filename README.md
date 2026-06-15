@@ -21,14 +21,6 @@ An ESP32-based application specifically designed for the **Waveshare ESP32-S3-To
 
 To bridge the wireless Wi-Fi LCC events from this device to a physical CAN-based layout, a **Wi-Fi to CAN LCC bridge** is required. The most common and recommended approach is to use JMRI.
 
-## Interface Screenshots
-
-![Winchcombe South Tab](docs/images/tab1_winchcombe.png)
-*Winchcombe South tab showing 8 levers with corresponding locking states.*
-
-![Gotherington Tab](docs/images/tab2_gotherington.png)
-*Gotherington tab showing 6 levers in various interlocking states.*
-
 ### Bridging with JMRI (LCC Hub)
 Assuming you have your USB-to-CAN adapter configured and working in JMRI:
 1. In the main JMRI window (PanelPro or DecoderPro), go to the **LCC** menu (or **OpenLCB** depending on your connection prefix).
@@ -48,6 +40,14 @@ This project is built using the ESP-IDF framework (v6 compatible).
    ```bash
    idf.py build flash monitor
    ```
+
+## Interface Screenshots
+
+![Winchcombe South Tab](docs/images/tab1_winchcombe.png)
+*Winchcombe South tab showing 8 levers with corresponding locking states.*
+
+![Gotherington Tab](docs/images/tab2_gotherington.png)
+*Gotherington tab showing 6 levers in various interlocking states.*
 
 ## License
 
