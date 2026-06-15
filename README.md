@@ -14,10 +14,14 @@ An ESP32-based application specifically designed for the **Waveshare ESP32-S3-To
 * **OpenLCB / LCC Integration**: Comprehensive support for Layout Command Control protocols, handling two-way event parsing, state reporting, and dynamic lever state synchronization.
 * **Web Configuration Interface**: A built-in Wi-Fi and web server UI for easy configuration of LCC events, network settings, and device parameters.
 * **State Persistence**: Non-Volatile Storage (NVS) is used to save and restore lever states, including manual lock collar states and startup modes, ensuring reliable operation across reboots.
-* **LCD Display Integration**: Features a startup splash screen, an informational drawer, and optimized memory buffering for smooth, tear-free UI animations.
+* **High-Performance Touch UI**: A fully custom-built virtual lever frame interface that forms the core of the application, featuring highly optimized memory buffering for smooth, tear-free operation, gesture controls, and a responsive informational drawer.
 * **Interlocking Conflict Policies**: Advanced configuration for LCC events and interlocking rules.
 
 ## Prerequisites
+
+## Interface Screenshots
+<!-- We will add your screenshots here once you provide them! -->
+
 
 To bridge the wireless Wi-Fi LCC events from this device to a physical CAN-based layout, a **Wi-Fi to CAN LCC bridge** is required. The most common and recommended approach is to use JMRI.
 
