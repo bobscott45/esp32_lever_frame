@@ -26,6 +26,7 @@ An ESP32-based application specifically designed for the **Waveshare ESP32-S3-To
 
 ![Gotherington Tab](docs/images/tab2_gotherington.png)
 *Gotherington tab showing 6 levers in various interlocking states.*
+
 To bridge the wireless Wi-Fi LCC events from this device to a physical CAN-based layout, a **Wi-Fi to CAN LCC bridge** is required. The most common and recommended approach is to use JMRI.
 
 ### Bridging with JMRI (LCC Hub)
