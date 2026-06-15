@@ -373,6 +373,14 @@ void app_main(void)
     // 1500ms ensures the panel sync is perfectly stable, preventing horizontal image wrapping.
     vTaskDelay(pdMS_TO_TICKS(1500));
     ESP_ERROR_CHECK(waveshare_rgb_lcd_bl_on());
+    
+    // The screen sometimes breaks up on the very first frame.
+    // The user noted it is "ok once it redraws".
+    // So we force a complete screen invalidate immediately after the backlight turns on!
+    if (lvgl_port_lock(-1)) {
+        lv_obj_invalidate(lv_scr_act());
+        lvgl_port_unlock();
+    }
 
     // 2. Initialize configuration manager and load dynamic config
     ESP_ERROR_CHECK(config_manager_init());
