@@ -650,6 +650,15 @@
                     <!-- Dynamically drawn levers -->
                 </div>
             </div>
+            
+            <div class="card" style="margin-top: 24px;">
+                <div class="card-header">
+                    <div class="card-title">Interlocking Summary</div>
+                </div>
+                <div id="interlocking-summary-container" style="font-size: 13px; line-height: 1.6; color: var(--text-muted);">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
         </div>
     </div>
 
@@ -909,6 +918,42 @@
                 `;
                 listContainer.appendChild(item);
             });
+            renderInterlockingSummary();
+        }
+
+        function renderInterlockingSummary() {
+            const summaryContainer = document.getElementById('interlocking-summary-container');
+            if (!summaryContainer) return;
+            
+            const currentTab = configData.tabs[activeTabIdx];
+            if (!currentTab || !currentTab.levers || currentTab.levers.length === 0) {
+                summaryContainer.innerHTML = '<em>No frame active.</em>';
+                return;
+            }
+            
+            let hasRules = false;
+            let html = '<ul style="margin: 0; padding-left: 20px;">';
+            
+            currentTab.levers.forEach((lever, idx) => {
+                if (lever.interlocking && lever.interlocking.length > 0) {
+                    lever.interlocking.forEach(rule => {
+                        if (rule.target >= 0 && rule.target < currentTab.levers.length) {
+                            hasRules = true;
+                            const targetLever = currentTab.levers[rule.target];
+                            const stateText = rule.state === 'REVERSED' ? 'REVERSED (THROWN)' : 'NORMAL';
+                            html += `<li style="margin-bottom: 4px;"><strong>Lever ${idx + 1}</strong> (${escapeHtml(lever.label).replace(/\\n/g, ' ')}) requires <strong>Lever ${rule.target + 1}</strong> (${escapeHtml(targetLever.label).replace(/\\n/g, ' ')}) to be <strong>${stateText}</strong></li>`;
+                        }
+                    });
+                }
+            });
+            
+            html += '</ul>';
+            
+            if (!hasRules) {
+                summaryContainer.innerHTML = '<em>No interlocking rules defined for this frame.</em>';
+            } else {
+                summaryContainer.innerHTML = html;
+            }
         }
 
         function renderPreview() {
