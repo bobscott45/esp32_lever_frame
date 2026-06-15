@@ -763,6 +763,12 @@
             const listContainer = document.getElementById('levers-editor-list');
             const noLeversMsg = document.getElementById('no-levers-msg');
             
+            const openDetails = new Set();
+            const existingDetails = listContainer.querySelectorAll('details');
+            existingDetails.forEach((d, i) => {
+                if (d.open) openDetails.add(i);
+            });
+            
             listContainer.innerHTML = '';
             
             if (configData.tabs.length === 0) return;
@@ -869,7 +875,7 @@
                             <button class="btn btn-danger btn-small" onclick="deleteLever(${idx})">✕</button>
                         </div>
                     </div>
-                    <details style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color);">
+                    <details style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color);" ${openDetails.has(idx) ? 'open' : ''}>
                         <summary style="font-size: 13px; color: var(--primary-brass); cursor: pointer; user-select: none; font-weight: bold; outline: none;">
                             Advanced Settings (Interlocking & LCC)
                         </summary>
