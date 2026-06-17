@@ -43,6 +43,24 @@ This project is built using the ESP-IDF framework (v6 compatible).
    idf.py build flash monitor
    ```
 
+## Running Tests
+
+This project includes a native host test harness built with CMake and the Unity framework. These tests run directly on your computer (no ESP32 hardware required) and validate the core hardware-agnostic C logic, such as the interlocking engine and configuration parsers.
+
+To run the test suite:
+1. Navigate to the `main/test` directory.
+2. Create a build directory and run CMake:
+   ```bash
+   cd main/test
+   mkdir build && cd build
+   cmake ..
+   make
+   ```
+3. Execute the test binary:
+   ```bash
+   ./run_tests
+   ```
+
 ## Example Configuration
 
 A prototypical demonstration configuration is included in `docs/json/prototypical_interlocking.json`. This layout demonstrates sequential signaling, mutually locking facing points, and conditional 'OR' route locking.
