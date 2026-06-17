@@ -254,12 +254,7 @@
             border-color: rgba(255,255,255,0.1);
         }
 
-        @media (max-width: 600px) {
-            .lever-editor-card {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
-        }
+
 
         .lever-index {
             font-weight: bold;
@@ -419,11 +414,13 @@
             display: none;
         }
 
-        .preview-track.locked .preview-lock-pin {
+        .preview-track.locked .preview-lock-pin,
+        .preview-track.system-locked .preview-lock-pin {
             display: block;
         }
 
-        .preview-track.locked {
+        .preview-track.locked,
+        .preview-track.system-locked {
             cursor: not-allowed;
             opacity: 0.9;
         }
@@ -495,6 +492,19 @@
             align-items: center;
             margin-top: 20px;
         }
+
+        .grid-3-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        .grid-2-col { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .grid-auto-col { display: grid; grid-template-columns: 1fr auto; gap: 15px; }
+        .lever-grid { display: grid; grid-template-columns: 40px 1fr 200px 120px; gap: 15px; align-items: center; }
+
+        @media (max-width: 768px) {
+            .grid-3-col, .grid-2-col, .grid-auto-col, .lever-grid {
+                grid-template-columns: 1fr !important;
+            }
+            .lever-grid { gap: 10px; }
+            .lever-actions { justify-content: flex-start; }
+        }
     </style>
 </head>
 <body>
@@ -508,7 +518,12 @@
                 <button class="btn btn-primary" id="save-btn" onclick="saveConfiguration()">Save & Apply</button>
                 <span style="font-size: 11px; color: #ff5555; font-weight: bold; max-width: 140px; line-height: 1.2;">Warning: Saving resets all lever states!</span>
             </div>
-            <button class="btn" onclick="fetchConfig()">Reload</button>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" onclick="exportConfiguration()">Export</button>
+                <button class="btn" onclick="document.getElementById('import-file').click()">Import</button>
+                <input type="file" id="import-file" style="display:none" accept=".json" onchange="importConfiguration(event)">
+                <button class="btn" onclick="fetchConfig()">Reload</button>
+            </div>
         </div>
     </header>
 
@@ -525,7 +540,7 @@
                 <div class="card-header">
                     <div class="card-title">System Status</div>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-top: 10px;">
+                <div class="grid-3-col" style="margin-top: 10px;">
                     <div>
                         <div style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: bold; margin-bottom: 4px;">AP IP Address</div>
                         <div id="status-ap-ip" style="font-size: 16px; font-weight: 500;">-</div>
@@ -546,7 +561,7 @@
                 <div class="card-header">
                     <div class="card-title">System Settings</div>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                <div class="grid-3-col">
                     <div>
                         <label for="wifi-password-input">AP Wi-Fi Password (WPA2)</label>
                         <div style="position: relative;">
@@ -570,7 +585,7 @@
                         </select>
                     </div>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                <div class="grid-2-col" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
                     <div>
                         <label for="wifi-ssid-input">Home Wi-Fi SSID</label>
                         <input type="text" id="wifi-ssid-input" oninput="updateWifiSsid(this.value)">
@@ -599,14 +614,14 @@
                         <button class="btn btn-danger btn-small" onclick="deleteCurrentTab()">Delete Frame</button>
                     </div>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr auto; gap: 15px; align-items: flex-end; margin-bottom: 20px;">
+                <div class="grid-auto-col" style="align-items: flex-end; margin-bottom: 20px;">
                     <div>
                         <label for="tab-name-input">Frame / Tab Title</label>
                         <input type="text" id="tab-name-input" oninput="updateTabName(this.value)">
                     </div>
                     <button class="btn" onclick="addNewTab()">Add New Frame</button>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; align-items: flex-end; margin-bottom: 10px;">
+                <div class="grid-2-col" style="align-items: flex-end; margin-bottom: 10px;">
                     <div>
                         <label for="label-lines-input">Num Label Rows (e.g. 2)</label>
                         <input type="text" inputmode="numeric" pattern="[0-9]*" id="label-lines-input" autocomplete="off" oninput="updateLabelLines(this.value)">
@@ -864,7 +879,7 @@
                                     <option value="NORMAL" ${rule.state === 'NORMAL' ? 'selected' : ''}>NORMAL</option>
                                     <option value="REVERSED" ${rule.state === 'REVERSED' ? 'selected' : ''}>REVERSED</option>
                                 </select>
-                                <span style="font-size: 12px; color: var(--text-muted);">o/w</span>
+                                <span style="font-size: 12px; color: var(--text-muted); font-weight: bold;">OR</span>
                                 <select class="btn-small" style="width: 120px; padding: 4px; font-size: 12px;" onchange="updateRuleAltTarget(${idx}, ${rIdx}, parseInt(this.value))">
                                     ${altTargetOptions}
                                 </select>
@@ -885,7 +900,7 @@
                 }
 
                 item.innerHTML = `
-                    <div style="display: grid; grid-template-columns: 40px 1fr 200px 120px; gap: 15px; align-items: center;">
+                    <div class="lever-grid">
                         <div class="lever-index">${idx + 1}</div>
                         <div>
                             <label>Label Text (use \\n for wrap)</label>
@@ -962,7 +977,7 @@
                             let altText = '';
                             if (rule.alt_target >= 0 && rule.alt_target < currentTab.levers.length) {
                                 const altStateText = rule.alt_state === 'REVERSED' ? 'REVERSED' : 'NORMAL';
-                                altText = ` o/w <strong>Lever ${rule.alt_target + 1}</strong> is <strong>${altStateText}</strong>`;
+                                altText = ` OR <strong>Lever ${rule.alt_target + 1}</strong> is <strong>${altStateText}</strong>`;
                             }
                             html += `<li style="margin-bottom: 4px;">When reversed, <strong>Lever ${idx + 1}</strong> (${escapeHtml(lever.label).replace(/\\n/g, ' ')}) locks <strong>Lever ${rule.target + 1}</strong> (${escapeHtml(targetLever.label).replace(/\\n/g, ' ')}) <strong>${stateText}</strong>${altText}</li>`;
                         }
@@ -976,6 +991,80 @@
                 summaryContainer.innerHTML = '<em>No interlocking rules defined for this frame.</em>';
             } else {
                 summaryContainer.innerHTML = html;
+            }
+        }
+
+        function isPreviewConditionMet(rule, changingLeverIdx, changingLeverStateStr) {
+            if (rule.target === -1) return true;
+            const getTrackState = (idx) => {
+                const trk = document.getElementById(`track-${idx}`);
+                return trk && trk.classList.contains('thrown') ? 'REVERSED' : 'NORMAL';
+            };
+            let targetStateStr = rule.target === changingLeverIdx ? changingLeverStateStr : getTrackState(rule.target);
+            let targetMet = targetStateStr === rule.state;
+
+            let altMet = false;
+            if (rule.alt_target !== -1) {
+                let altStateStr = rule.alt_target === changingLeverIdx ? changingLeverStateStr : getTrackState(rule.alt_target);
+                altMet = altStateStr === rule.alt_state;
+            }
+            return targetMet || altMet;
+        }
+
+        function checkPreviewInterlocking(tabLevers, leverIdx, targetStateThrown) {
+            let targetStateStr = targetStateThrown ? 'REVERSED' : 'NORMAL';
+            
+            if (targetStateThrown) {
+                let myRules = tabLevers[leverIdx].interlocking || [];
+                for (let rule of myRules) {
+                    if (!isPreviewConditionMet(rule, leverIdx, targetStateStr)) return false;
+                }
+            }
+
+            for (let i = 0; i < tabLevers.length; i++) {
+                if (i === leverIdx) continue;
+                const track = document.getElementById(`track-${i}`);
+                if (track && track.classList.contains('thrown')) {
+                    let otherRules = tabLevers[i].interlocking || [];
+                    for (let rule of otherRules) {
+                        if (!isPreviewConditionMet(rule, leverIdx, targetStateStr)) return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function updateAllPreviewLocks() {
+            const currentTab = configData.tabs[activeTabIdx];
+            if (!currentTab || !currentTab.levers) return;
+            
+            for (let idx = 0; idx < currentTab.levers.length; idx++) {
+                const track = document.getElementById(`track-${idx}`);
+                const collar = document.getElementById(`collar-${idx}`);
+                if (!track || !collar) continue;
+                
+                const isThrown = track.classList.contains('thrown');
+                const targetStateThrown = !isThrown;
+                const isInterlocked = !checkPreviewInterlocking(currentTab.levers, idx, targetStateThrown);
+                const isManualLocked = collar.classList.contains('locked');
+                
+                const pin = track.querySelector('.preview-lock-pin');
+                if (isInterlocked) {
+                    track.classList.add('system-locked');
+                    pin.style.display = 'block';
+                    if (!isManualLocked) {
+                        collar.innerText = "INTERLOCK";
+                    }
+                } else {
+                    track.classList.remove('system-locked');
+                    if (!isManualLocked) {
+                        pin.style.display = 'none';
+                        collar.innerText = "UNLOCKED";
+                    } else {
+                        pin.style.display = 'block';
+                        collar.innerText = "LOCKED";
+                    }
+                }
             }
         }
 
@@ -1045,27 +1134,16 @@
                 // Collar lock action
                 collar.addEventListener('click', () => {
                     const isLocked = collar.classList.toggle('locked');
-                    collar.innerText = isLocked ? "Locked" : "Unlocked";
-                    
-                    if (isLocked) {
-                        track.classList.add('locked');
-                    } else {
-                        track.classList.remove('locked');
-                    }
+                    updateAllPreviewLocks();
                 });
                 
                 // Slide switch toggle
                 track.addEventListener('click', () => {
-                    if (track.classList.contains('locked')) {
-                        // Flashes the lock pin to indicate it is locked
-                        const pin = track.querySelector('.preview-lock-pin');
-                        pin.style.display = 'block';
-                        setTimeout(() => {
-                            if (!track.classList.contains('locked')) {
-                                pin.style.display = 'none';
-                            }
-                        }, 500);
-                        return;
+                    const isCollarLocked = collar.classList.contains('locked');
+                    const isSystemLocked = track.classList.contains('system-locked');
+
+                    if (isCollarLocked || isSystemLocked) {
+                        return; // Prevent movement, pin is already showing
                     }
                     const isThrown = track.classList.toggle('thrown');
                     
@@ -1076,8 +1154,13 @@
                         valUp.classList.add('active');
                         valDown.classList.remove('active');
                     }
+                    
+                    updateAllPreviewLocks();
                 });
             });
+            
+            // Initial lock state evaluation
+            updateAllPreviewLocks();
         }
 
         // Configuration manipulation
@@ -1228,12 +1311,24 @@
         }
 
         function updateRuleTarget(leverIdx, ruleIdx, val) {
-            configData.tabs[activeTabIdx].levers[leverIdx].interlocking[ruleIdx].target = val;
+            let rule = configData.tabs[activeTabIdx].levers[leverIdx].interlocking[ruleIdx];
+            if (val !== -1 && val === rule.alt_target) {
+                showToast("Cannot select the same lever for both 'locks' and 'OR'.", "error");
+                renderEditor();
+                return;
+            }
+            rule.target = val;
             checkChanges();
         }
 
         function updateRuleAltTarget(leverIdx, ruleIdx, val) {
-            configData.tabs[activeTabIdx].levers[leverIdx].interlocking[ruleIdx].alt_target = val;
+            let rule = configData.tabs[activeTabIdx].levers[leverIdx].interlocking[ruleIdx];
+            if (val !== -1 && val === rule.target) {
+                showToast("Cannot select the same lever for both 'locks' and 'OR'.", "error");
+                renderEditor();
+                return;
+            }
+            rule.alt_target = val;
             checkChanges();
         }
 
@@ -1272,6 +1367,43 @@
             renderEditor();
             renderPreview();
             checkChanges();
+        }
+
+        function exportConfiguration() {
+            if (!configData) return;
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(configData, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", "lever_frame_config.json");
+            document.body.appendChild(dlAnchorElem);
+            dlAnchorElem.click();
+            dlAnchorElem.remove();
+        }
+
+        function importConfiguration(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedConfig = JSON.parse(e.target.result);
+                    if (!importedConfig.tabs || !Array.isArray(importedConfig.tabs)) {
+                        throw new Error("Invalid configuration file.");
+                    }
+                    configData = importedConfig;
+                    activeTabIdx = 0;
+                    renderTabs();
+                    renderEditor();
+                    renderPreview();
+                    checkChanges();
+                    showToast("Config imported! Click 'Save & Apply' to upload to the device.", "success");
+                } catch (err) {
+                    showToast("Failed to import: " + err.message, "error");
+                }
+                event.target.value = "";
+            };
+            reader.readAsText(file);
         }
 
         async function saveConfiguration() {

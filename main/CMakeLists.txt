@@ -1,6 +1,7 @@
 idf_component_register(SRCS "main.c"
                     "lever.c"
                     "lever_frame.c"
+                    "interlocking.c"
                     "config_manager.c"
                     "web_server.c"
                     "state_manager.c"

@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-06-17
+
+### Added
+- Native host test harness using CMake and Unity for testing hardware-agnostic C logic.
+- Real-time global interlocking simulator in the Web UI, which permanently renders red locking pins and "INTERLOCK" collar labels for accurate previewing.
+- Export/Import configuration functionality in the Web UI to easily backup, share, and test `.json` layout configs.
+- Included `docs/json/prototypical_interlocking.json`, a complex demonstration of junction locking, FPLs, and conditional route locking.
+
+### Changed
+- Abstracted the core interlocking engine into a standalone module (`interlocking.c`) for bidirectional, deadlock-preventing locking evaluation.
+- Updated the Web UI conditional locking terminology from "otherwise (o/w)" and "unless" to an explicit Boolean "OR" to align with prototypical route specification standards.
+- Updated device LCD info drawer text generation to accurately display conditional 'OR' requirements when a lever is tapped.
+- Re-architected interlocking evaluation to perfectly model physical mechanical tappet locking (including Normal/Reversed locking, conditional locks, and sequential mutual locks).
+
 ## [1.0.1] - 2026-06-17
 
 ### Changed

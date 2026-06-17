@@ -40,13 +40,7 @@
 #define LEVER_COLOR_FACING_POINTS  0x2b58b5 // Royal Blue
 #define LEVER_COLOR_SPARE          0xb8b8b8 // Medium Light Gray
 
-typedef enum {
-    LEVER_TYPE_HOME_SIGNAL,
-    LEVER_TYPE_DISTANT_SIGNAL,
-    LEVER_TYPE_POINTS,
-    LEVER_TYPE_FACING_POINTS,
-    LEVER_TYPE_SPARE
-} lever_type_t;
+#include "interlocking.h"
 
 #define LEVER_STATE_NORMAL_COLOR   0x111111 // Dark Void for the slot
 
