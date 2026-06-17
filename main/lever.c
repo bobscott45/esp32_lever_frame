@@ -57,6 +57,37 @@ static void collar_btn_event_cb(lv_event_t * e) {
     state_manager_save(system_wrapper, config_manager_get_hash());
 }
 
+static bool is_condition_met(const interlocking_condition_t *cond, lv_obj_t *frame, const tab_def_t *tab_def, int changing_lever_idx, bool changing_lever_state) {
+    if (cond->target_lever_index < 0) return true;
+    
+    bool target_state;
+    if (cond->target_lever_index == changing_lever_idx) {
+        target_state = changing_lever_state;
+    } else if (cond->target_lever_index < tab_def->lever_count) {
+        lv_obj_t *wrapper = lv_obj_get_child(frame, cond->target_lever_index);
+        lv_obj_t *sw = lv_obj_get_child(lv_obj_get_child(lv_obj_get_child(wrapper, 0), 1), 1);
+        target_state = lv_obj_has_state(sw, LV_STATE_CHECKED);
+    } else {
+        target_state = false; // Invalid lever index
+    }
+    bool target_met = (target_state == cond->required_state);
+    
+    bool alt_met = false;
+    if (cond->alt_target_lever_index >= 0 && cond->alt_target_lever_index < tab_def->lever_count) {
+        bool alt_state;
+        if (cond->alt_target_lever_index == changing_lever_idx) {
+            alt_state = changing_lever_state;
+        } else {
+            lv_obj_t *wrapper = lv_obj_get_child(frame, cond->alt_target_lever_index);
+            lv_obj_t *sw = lv_obj_get_child(lv_obj_get_child(lv_obj_get_child(wrapper, 0), 1), 1);
+            alt_state = lv_obj_has_state(sw, LV_STATE_CHECKED);
+        }
+        alt_met = (alt_state == cond->alt_required_state);
+    }
+    
+    return target_met || alt_met;
+}
+
 static bool interlocking_check(lv_obj_t *sw, bool target_state_thrown) {
     lv_obj_t *switch_group = lv_obj_get_parent(sw);
     lv_obj_t *container = lv_obj_get_parent(switch_group);
@@ -68,64 +99,33 @@ static bool interlocking_check(lv_obj_t *sw, bool target_state_thrown) {
     if (!tab_def) return true; // No config attached, allow movement
     
     if (target_state_thrown) {
-        // We are trying to throw this lever. Check if our own dependencies are met.
+        // We are trying to throw this lever. Check if our own dependencies will be met.
         const lever_def_t *my_def = &tab_def->levers[lever_index];
         for (int i = 0; i < MAX_INTERLOCKING_CONDITIONS; i++) {
-            int target_idx = my_def->conditions[i].target_lever_index;
-            if (target_idx < 0) break; // End of list
-            if (target_idx >= tab_def->lever_count) continue; // Invalid
-            
-            lv_obj_t *target_wrapper = lv_obj_get_child(frame, target_idx);
-            lv_obj_t *target_container = lv_obj_get_child(target_wrapper, 0);
-            lv_obj_t *target_switch_group = lv_obj_get_child(target_container, 1);
-            lv_obj_t *target_sw = lv_obj_get_child(target_switch_group, 1);
-            
-            bool is_target_thrown = lv_obj_has_state(target_sw, LV_STATE_CHECKED);
-            if (is_target_thrown != my_def->conditions[i].required_state) {
-                return false; // Dependency failed
+            if (my_def->conditions[i].target_lever_index < 0) break;
+            if (!is_condition_met(&my_def->conditions[i], frame, tab_def, lever_index, target_state_thrown)) {
+                return false;
             }
         }
+    }
+    
+    // Check if any OTHER thrown lever requires us to not change to target_state_thrown
+    for (int i = 0; i < tab_def->lever_count; i++) {
+        if (i == lever_index) continue;
         
-        // We must ALSO check if any OTHER thrown lever requires us to remain Normal!
-        for (int i = 0; i < tab_def->lever_count; i++) {
-            if (i == lever_index) continue;
-            
-            lv_obj_t *other_wrapper = lv_obj_get_child(frame, i);
-            lv_obj_t *other_container = lv_obj_get_child(other_wrapper, 0);
-            lv_obj_t *other_switch_group = lv_obj_get_child(other_container, 1);
-            lv_obj_t *other_sw = lv_obj_get_child(other_switch_group, 1);
-            
-            if (lv_obj_has_state(other_sw, LV_STATE_CHECKED)) {
-                const lever_def_t *other_def = &tab_def->levers[i];
-                for (int c = 0; c < MAX_INTERLOCKING_CONDITIONS; c++) {
-                    int target_idx = other_def->conditions[c].target_lever_index;
-                    if (target_idx < 0) break;
-                    
-                    if (target_idx == lever_index && other_def->conditions[c].required_state == false) {
-                        return false; // Another thrown lever requires us to be Normal
-                    }
-                }
-            }
-        }
-    } else {
-        // We are trying to normalize this lever. Check if any OTHER thrown lever requires us to be thrown!
-        for (int i = 0; i < tab_def->lever_count; i++) {
-            if (i == lever_index) continue;
-            
-            lv_obj_t *other_wrapper = lv_obj_get_child(frame, i);
-            lv_obj_t *other_container = lv_obj_get_child(other_wrapper, 0);
-            lv_obj_t *other_switch_group = lv_obj_get_child(other_container, 1);
-            lv_obj_t *other_sw = lv_obj_get_child(other_switch_group, 1);
-            
-            if (lv_obj_has_state(other_sw, LV_STATE_CHECKED)) {
-                const lever_def_t *other_def = &tab_def->levers[i];
-                for (int c = 0; c < MAX_INTERLOCKING_CONDITIONS; c++) {
-                    int target_idx = other_def->conditions[c].target_lever_index;
-                    if (target_idx < 0) break;
-                    
-                    if (target_idx == lever_index && other_def->conditions[c].required_state == true) {
-                        return false; // Another thrown lever requires us to remain thrown
-                    }
+        lv_obj_t *other_wrapper = lv_obj_get_child(frame, i);
+        lv_obj_t *other_container = lv_obj_get_child(other_wrapper, 0);
+        lv_obj_t *other_switch_group = lv_obj_get_child(other_container, 1);
+        lv_obj_t *other_sw = lv_obj_get_child(other_switch_group, 1);
+        
+        if (lv_obj_has_state(other_sw, LV_STATE_CHECKED)) {
+            const lever_def_t *other_def = &tab_def->levers[i];
+            for (int c = 0; c < MAX_INTERLOCKING_CONDITIONS; c++) {
+                if (other_def->conditions[c].target_lever_index < 0) break;
+                
+                // If this condition would fail after our change, we are blocked.
+                if (!is_condition_met(&other_def->conditions[c], frame, tab_def, lever_index, target_state_thrown)) {
+                    return false;
                 }
             }
         }

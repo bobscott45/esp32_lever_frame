@@ -261,6 +261,18 @@ static esp_err_t parse_json_to_config(const char *json_str, lever_system_config_
                                 dynamic_levers[l].conditions[c].required_state = (strcmp(state_obj->valuestring, "REVERSED") == 0);
                             }
                         }
+                        
+                        cJSON *alt_target_obj = cJSON_GetObjectItem(cond_obj, "alt_target");
+                        cJSON *alt_state_obj = cJSON_GetObjectItem(cond_obj, "alt_state");
+                        if (alt_target_obj && cJSON_IsNumber(alt_target_obj)) {
+                            dynamic_levers[l].conditions[c].alt_target_lever_index = alt_target_obj->valueint;
+                            if (alt_state_obj && cJSON_IsString(alt_state_obj)) {
+                                dynamic_levers[l].conditions[c].alt_required_state = (strcmp(alt_state_obj->valuestring, "REVERSED") == 0);
+                            }
+                        } else {
+                            dynamic_levers[l].conditions[c].alt_target_lever_index = -1;
+                            dynamic_levers[l].conditions[c].alt_required_state = false;
+                        }
                     }
                 }
             }
@@ -549,6 +561,8 @@ char *config_manager_get_json_str(void) {
                     cJSON *cond_obj = cJSON_CreateObject();
                     cJSON_AddNumberToObject(cond_obj, "target", curr->tabs[t].levers[l].conditions[c].target_lever_index);
                     cJSON_AddStringToObject(cond_obj, "state", curr->tabs[t].levers[l].conditions[c].required_state ? "REVERSED" : "NORMAL");
+                    cJSON_AddNumberToObject(cond_obj, "alt_target", curr->tabs[t].levers[l].conditions[c].alt_target_lever_index);
+                    cJSON_AddStringToObject(cond_obj, "alt_state", curr->tabs[t].levers[l].conditions[c].alt_required_state ? "REVERSED" : "NORMAL");
                     cJSON_AddItemToArray(interlocking_arr, cond_obj);
                 }
             }

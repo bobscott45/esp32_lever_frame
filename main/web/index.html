@@ -838,31 +838,50 @@
                 // Build rules HTML
                 let rulesHtml = '';
                 if (lever.interlocking && lever.interlocking.length > 0) {
+                    rulesHtml += `<div style="font-size: 12px; font-weight: bold; color: var(--primary-brass); margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.2);">WHEN REVERSED, THIS LEVER:</div>`;
                     lever.interlocking.forEach((rule, rIdx) => {
                         let targetOptions = '<option value="-1">Select Lever...</option>';
                         currentTab.levers.forEach((lvr, lIdx) => {
                             if (lIdx !== idx) {
-                                targetOptions += `<option value="${lIdx}" ${rule.target === lIdx ? 'selected' : ''}>Lever ${lIdx + 1} (${escapeHtml(lvr.label).replace(/\\n/g, ' ')})</option>`;
+                                targetOptions += `<option value="${lIdx}" ${rule.target === lIdx ? 'selected' : ''}>Lever ${lIdx + 1}</option>`;
                             }
                         });
                         
+                        let altTargetOptions = '<option value="-1">NONE</option>';
+                        currentTab.levers.forEach((lvr, lIdx) => {
+                            if (lIdx !== idx) {
+                                altTargetOptions += `<option value="${lIdx}" ${rule.alt_target === lIdx ? 'selected' : ''}>Lever ${lIdx + 1}</option>`;
+                            }
+                        });
+
                         rulesHtml += `
-                            <div style="display: flex; gap: 8px; align-items: center; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px;">
-                                <span style="font-size: 12px; color: var(--text-muted);">Requires</span>
-                                <select class="btn-small" style="width: 150px; padding: 4px; font-size: 12px;" onchange="updateRuleTarget(${idx}, ${rIdx}, parseInt(this.value))">
+                            <div style="display: flex; gap: 8px; align-items: center; background: rgba(0,0,0,0.2); padding: 4px 8px; border-radius: 4px; margin-bottom: 4px;">
+                                <span style="font-size: 12px; color: var(--text-muted);">locks</span>
+                                <select class="btn-small" style="width: 120px; padding: 4px; font-size: 12px;" onchange="updateRuleTarget(${idx}, ${rIdx}, parseInt(this.value))">
                                     ${targetOptions}
                                 </select>
-                                <span style="font-size: 12px; color: var(--text-muted);">to be</span>
-                                <select class="btn-small" style="width: 200px; padding: 4px; font-size: 12px;" onchange="updateRuleState(${idx}, ${rIdx}, this.value)">
-                                    <option value="REVERSED" ${rule.state === 'REVERSED' ? 'selected' : ''}>REVERSED (THROWN / OFF)</option>
-                                    <option value="NORMAL" ${rule.state === 'NORMAL' ? 'selected' : ''}>NORMAL (ON)</option>
+                                <select class="btn-small" style="width: 100px; padding: 4px; font-size: 12px;" onchange="updateRuleState(${idx}, ${rIdx}, this.value)">
+                                    <option value="NORMAL" ${rule.state === 'NORMAL' ? 'selected' : ''}>NORMAL</option>
+                                    <option value="REVERSED" ${rule.state === 'REVERSED' ? 'selected' : ''}>REVERSED</option>
+                                </select>
+                                <span style="font-size: 12px; color: var(--text-muted);">o/w</span>
+                                <select class="btn-small" style="width: 120px; padding: 4px; font-size: 12px;" onchange="updateRuleAltTarget(${idx}, ${rIdx}, parseInt(this.value))">
+                                    ${altTargetOptions}
+                                </select>
+                                <span style="font-size: 12px; color: var(--text-muted);">is</span>
+                                <select class="btn-small" style="width: 100px; padding: 4px; font-size: 12px;" onchange="updateRuleAltState(${idx}, ${rIdx}, this.value)">
+                                    <option value="NORMAL" ${rule.alt_state === 'NORMAL' ? 'selected' : ''}>NORMAL</option>
+                                    <option value="REVERSED" ${rule.alt_state === 'REVERSED' ? 'selected' : ''}>REVERSED</option>
                                 </select>
                                 <button class="btn btn-danger btn-small" style="padding: 2px 6px;" onclick="removeRule(${idx}, ${rIdx})">✕</button>
                             </div>
                         `;
                     });
                 } else {
-                    rulesHtml = `<span style="font-size: 12px; color: var(--text-muted); font-style: italic;">No interlocking rules</span>`;
+                    rulesHtml = `
+                        <div style="font-size: 12px; font-weight: bold; color: var(--primary-brass); margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.2);">WHEN REVERSED, THIS LEVER:</div>
+                        <span style="font-size: 12px; color: var(--text-muted); font-style: italic;">No interlocking rules</span>
+                    `;
                 }
 
                 item.innerHTML = `
@@ -894,7 +913,6 @@
                         </summary>
                         <div style="padding-top: 12px; display: flex; flex-direction: column; gap: 12px;">
                             <div style="display: flex; flex-direction: column; gap: 8px; background: rgba(0,0,0,0.1); padding: 8px; border-radius: 6px;">
-                                <strong style="font-size: 12px; color: var(--primary-brass); text-transform: uppercase;">Interlocking:</strong>
                                 <div style="display: flex; flex-direction: column; gap: 6px;">
                                     ${rulesHtml}
                                     <button class="btn btn-small" style="padding: 2px 8px; font-size: 12px; align-self: flex-start; margin-top: 4px;" onclick="addRule(${idx})">+ Add Rule</button>
@@ -940,8 +958,13 @@
                         if (rule.target >= 0 && rule.target < currentTab.levers.length) {
                             hasRules = true;
                             const targetLever = currentTab.levers[rule.target];
-                            const stateText = rule.state === 'REVERSED' ? 'REVERSED (THROWN)' : 'NORMAL';
-                            html += `<li style="margin-bottom: 4px;"><strong>Lever ${idx + 1}</strong> (${escapeHtml(lever.label).replace(/\\n/g, ' ')}) requires <strong>Lever ${rule.target + 1}</strong> (${escapeHtml(targetLever.label).replace(/\\n/g, ' ')}) to be <strong>${stateText}</strong></li>`;
+                            const stateText = rule.state === 'REVERSED' ? 'REVERSED' : 'NORMAL';
+                            let altText = '';
+                            if (rule.alt_target >= 0 && rule.alt_target < currentTab.levers.length) {
+                                const altStateText = rule.alt_state === 'REVERSED' ? 'REVERSED' : 'NORMAL';
+                                altText = ` o/w <strong>Lever ${rule.alt_target + 1}</strong> is <strong>${altStateText}</strong>`;
+                            }
+                            html += `<li style="margin-bottom: 4px;">When reversed, <strong>Lever ${idx + 1}</strong> (${escapeHtml(lever.label).replace(/\\n/g, ' ')}) locks <strong>Lever ${rule.target + 1}</strong> (${escapeHtml(targetLever.label).replace(/\\n/g, ' ')}) <strong>${stateText}</strong>${altText}</li>`;
                         }
                     });
                 }
@@ -1193,7 +1216,7 @@
                 showToast("Maximum 4 interlocking rules per lever.", "error");
                 return;
             }
-            lever.interlocking.push({ target: -1, state: "REVERSED" });
+            lever.interlocking.push({ target: -1, state: "NORMAL", alt_target: -1, alt_state: "NORMAL" });
             renderEditor();
             checkChanges();
         }
@@ -1206,6 +1229,16 @@
 
         function updateRuleTarget(leverIdx, ruleIdx, val) {
             configData.tabs[activeTabIdx].levers[leverIdx].interlocking[ruleIdx].target = val;
+            checkChanges();
+        }
+
+        function updateRuleAltTarget(leverIdx, ruleIdx, val) {
+            configData.tabs[activeTabIdx].levers[leverIdx].interlocking[ruleIdx].alt_target = val;
+            checkChanges();
+        }
+
+        function updateRuleAltState(leverIdx, ruleIdx, val) {
+            configData.tabs[activeTabIdx].levers[leverIdx].interlocking[ruleIdx].alt_state = val;
             checkChanges();
         }
 

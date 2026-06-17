@@ -27,6 +27,8 @@
 typedef struct {
     int target_lever_index; // -1 if unused
     bool required_state; // true = THROWN, false = NORMAL
+    int alt_target_lever_index; // -1 if unused
+    bool alt_required_state; // true = THROWN, false = NORMAL
 } interlocking_condition_t;
 
 typedef enum {

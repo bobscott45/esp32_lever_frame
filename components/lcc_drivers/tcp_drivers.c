@@ -43,6 +43,14 @@ int active_tcp_socket = -1;
 
 
 static void tcp_server_task(void *pvParameters) {
+    ESP_LOGI("TCP_Server", "Waiting for WiFi connection before starting GridConnect server...");
+    if (wifi_event_group) {
+        xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_BIT, pdFALSE, pdTRUE, portMAX_DELAY);
+    } else {
+        ESP_LOGW("TCP_Server", "wifi_event_group is NULL. TCP server may not have a connection.");
+    }
+    ESP_LOGI("TCP_Server", "WiFi Connected! Starting OpenLCB Hub...");
+
     char rx_buffer[256];
     struct sockaddr_in dest_addr = {
         .sin_addr.s_addr = htonl(INADDR_ANY),
@@ -116,14 +124,6 @@ static void tcp_server_task(void *pvParameters) {
 void tcp_driver_initialize(void) {
     ESP_LOGI(TAG, "Initializing TCP/IP driver");
     
-    // Wi-Fi initialization is now handled by web_server.c
-    ESP_LOGI(TAG, "Waiting for WiFi connection...");
-    if (wifi_event_group) {
-        xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_BIT, pdFALSE, pdTRUE, portMAX_DELAY);
-    } else {
-        ESP_LOGW(TAG, "wifi_event_group is NULL. TCP server may not have a connection.");
-    }
-    ESP_LOGI(TAG, "WiFi Connected! Initializing OpenLCB Hub...");
-    // Start the raw TCP server task instead of start_http_server()
+    // Start the raw TCP server task instead of start_http_server(). It will wait for WiFi internally.
     xTaskCreate(tcp_server_task, "openlcb_tcp", 4096, NULL, 5, NULL);
 }
