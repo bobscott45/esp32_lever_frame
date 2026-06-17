@@ -43,10 +43,12 @@ This project is built using the ESP-IDF framework (v6 compatible).
 
 ## Interface Screenshots
 
-![Winchcombe South Tab](docs/images/tab1_winchcombe.png)
+*Note: These images are AI enhanced photos of a real display.*
+
+![Winchcombe South Tab](docs/images/Gemini_Enhanced_Image_Winchcombe.png)
 *Winchcombe South tab showing 8 levers with corresponding locking states.*
 
-![Gotherington Tab](docs/images/tab2_gotherington.png)
+![Gotherington Tab](docs/images/Gemini_Enhanced_Image_Gotherington.png)
 *Gotherington tab showing 6 levers in various interlocking states.*
 
 ## License
