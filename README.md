@@ -15,7 +15,7 @@ An ESP32-based application specifically designed for the **Waveshare ESP32-S3-To
 * **Web Configuration Interface**: A built-in Wi-Fi and web server UI for easy configuration of LCC events, network settings, and device parameters.
 * **State Persistence**: Non-Volatile Storage (NVS) is used to save and restore lever states, including manual lock collar states and startup modes, ensuring reliable operation across reboots.
 * **High-Performance Touch UI**: A fully custom-built virtual lever frame interface that forms the core of the application, featuring highly optimized memory buffering for smooth, tear-free operation, gesture controls, and a responsive informational drawer.
-* **Prototypical Interlocking Engine**: A mathematically flawless C-logic engine that bidirectionally models physical mechanical tappet locking, preventing deadlocks and supporting complex route dependencies like Facing Point Locks (FPLs) and conditional "OR" logic.
+* **Prototypical Interlocking Engine**: A C-based interlocking engine that bidirectionally models physical mechanical tappet locking, preventing deadlocks and supporting complex route dependencies like Facing Point Locks (FPLs) and conditional "OR" logic.
 * **Live Web Simulator**: A built-in simulator allows you to preview and debug complex interlocking logic in real-time, matching exactly how the physical frame behaves with permanent locking visuals.
 * **Interlocking Conflict Policies**: Advanced configuration for LCC events and interlocking rules.
 
@@ -45,12 +45,12 @@ This project is built using the ESP-IDF framework (v6 compatible).
 
 ## Example Configuration
 
-We have included a highly prototypical demonstration configuration in `docs/json/prototypical_interlocking.json`. This layout is an excellent example of sequential signaling, mutually locking facing points, and conditional 'OR' route locking.
+A prototypical demonstration configuration is included in `docs/json/prototypical_interlocking.json`. This layout demonstrates sequential signaling, mutually locking facing points, and conditional 'OR' route locking.
 
 To load this configuration:
-1. Open the Web UI in your browser.
+1. Open the Web UI in a browser.
 2. Click the **Import** button in the header and select the `docs/json/prototypical_interlocking.json` file.
-3. The layout will load into the live simulator. Click **Save & Apply** to push it to your ESP32 device!
+3. The layout will load into the live simulator. Click **Save & Apply** to push it to the ESP32 device.
 
 ### North Junction (Main Frame - 8 Levers)
 This frame protects a junction where a branch line diverges from a main line.
@@ -69,6 +69,29 @@ This frame controls a small yard crossover.
 - **Lever 2 (YARD CROSSOVER)**: The physical points for the crossover. *Locks Lever 3 REVERSED*.
 - **Lever 3 (FRAME RELEASE)**: A ground frame release mechanism.
 - **Lever 4 (SPARE)**
+
+### Demonstrating the Interlocking
+
+To observe the interlocking rules in action, try the following sequences in the Web UI simulator:
+
+**North Junction:**
+1. Try to pull **Lever 2 (UP MAIN HOME)**. It will be locked because the Facing Point Lock (Lever 3) is not engaged.
+2. Try to pull **Lever 4 (JUNCTION POINTS)**. It is free to move because the FPL (Lever 3) is withdrawn.
+3. Pull **Lever 3 (FPL)** to lock the points.
+4. Try to pull **Lever 4** again. It is now locked by Lever 3.
+5. Pull **Lever 2** again. It now clears because Lever 4 is Normal and Lever 3 is Reversed.
+6. Pull **Lever 1 (UP DISTANT)**. It clears because Lever 2 satisfies the 'OR' condition.
+7. Return **Lever 1** and **Lever 2** to Normal.
+8. Return **Lever 3** to Normal, pull **Lever 4** (Reversed), and pull **Lever 3** (Reversed).
+9. Pull **Lever 5 (UP BRANCH HOME)**. It clears because the points are set to the branch.
+10. Pull **Lever 1 (UP DISTANT)** again. It clears because Lever 5 now satisfies the 'OR' condition.
+
+**South Box:**
+1. Try to pull **Lever 2 (YARD CROSSOVER)**. It will be locked.
+2. Pull **Lever 3 (FRAME RELEASE)** to unlock the crossover.
+3. Pull **Lever 2 (YARD CROSSOVER)**. It is now free to move.
+4. Pull **Lever 1 (SHUNT AHEAD)**. It clears because the crossover is Reversed.
+5. Try to return **Lever 2** to Normal. It is locked by Lever 1.
 
 ## Interface Screenshots
 
