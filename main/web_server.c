@@ -24,6 +24,14 @@
 #include "esp_http_server.h"
 #include "config_manager.h"
 #include "esp_system.h"
+#include "freertos/timers.h"
+
+static TimerHandle_t wifi_retry_timer = NULL;
+
+static void wifi_retry_timer_cb(TimerHandle_t xTimer) {
+    ESP_LOGI("WebServer", "Retrying WiFi connection...");
+    esp_wifi_connect();
+}
 
 static const char *TAG = "WebServer";
 static httpd_handle_t server = NULL;
@@ -38,9 +46,14 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
         esp_wifi_connect();
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
         wifi_event_sta_disconnected_t* event = (wifi_event_sta_disconnected_t*) event_data;
-        ESP_LOGE(TAG, "WiFi Disconnected! Reason code: %d", event->reason);
-        // Auto-retry connection
-        esp_wifi_connect();
+        ESP_LOGE(TAG, "WiFi Disconnected! Reason code: %d. Retrying in 5 seconds...", event->reason);
+        // Auto-retry connection with backoff to prevent killing the AP
+        if (wifi_retry_timer == NULL) {
+            wifi_retry_timer = xTimerCreate("wifi_retry", pdMS_TO_TICKS(5000), pdFALSE, NULL, wifi_retry_timer_cb);
+        }
+        if (wifi_retry_timer != NULL) {
+            xTimerStart(wifi_retry_timer, 0);
+        }
     } else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP) {
         ip_event_got_ip_t* event = (ip_event_got_ip_t*) event_data;
         ESP_LOGI(TAG, "Got IP: " IPSTR, IP2STR(&event->ip_info.ip));
