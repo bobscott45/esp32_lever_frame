@@ -113,13 +113,15 @@ To observe the interlocking rules in action, try the following sequences in the 
 
 ## Interface Screenshots
 
-*Note: These images are AI enhanced photos of a real display.*
+*Note: These are screenshots of the device displaying the North Junction and South Box configurations.*
 
-![Winchcombe South Tab](docs/images/Gemini_Enhanced_Image_Winchcombe.png)
-*Winchcombe South tab showing 8 levers with corresponding locking states.*
+![North/South Box Screenshot 1](docs/images/0E2AE271-7E60-4A7B-86E7-6BA4216B225F.PNG)
 
-![Gotherington Tab](docs/images/Gemini_Enhanced_Image_Gotherington.png)
-*Gotherington tab showing 6 levers in various interlocking states.*
+![North/South Box Screenshot 2](docs/images/790B1029-47A5-48D3-9F57-C320E8397BDD.PNG)
+
+![North/South Box Screenshot 3](docs/images/AEC439DA-648A-42DC-90BE-BCF009658DFD.PNG)
+
+![North/South Box Screenshot 4](docs/images/CA38ADD2-954A-4621-9F74-9376CB706CB4.PNG)
 
 ## License
 
