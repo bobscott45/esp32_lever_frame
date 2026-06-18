@@ -61,6 +61,28 @@ To run the test suite:
    ./run_tests
    ```
 
+## Using the Web Configuration Interface
+
+The device hosts a built-in Web Configuration Interface that can be accessed in two ways: via its own built-in Wi-Fi Access Point (AP) or through your home network.
+
+### Finding the IP Address
+At any time, you can find the current IP addresses and Wi-Fi credentials by swiping down from the top of the device's touch screen. This will reveal the "System Information" drawer.
+
+### Method 1: Connecting via the Built-in Access Point (AP)
+When the device is powered on, it automatically broadcasts its own Wi-Fi network.
+1. On your computer or smartphone, connect to the Wi-Fi network named **`Lever-Frame-Config`**.
+2. Enter the default password: **`signalman`** (this can be changed in the settings later).
+3. Open a web browser and navigate to **`http://192.168.4.1`**.
+
+### Method 2: Connecting via your Home Network
+If you have configured the device to connect to your home Wi-Fi network (which is required for JMRI/LCC bridge connection):
+1. Ensure your computer or smartphone is connected to the same home network.
+2. Swipe down from the top of the device's screen to open the System Information drawer.
+3. Note the IP address listed next to **Home Wi-Fi IP**.
+4. Open a web browser and navigate to that IP address (e.g., `http://192.168.x.x`).
+
+From the Web UI, you can configure LCC events, import/export the JSON interlocking configuration, update Wi-Fi credentials, and use the live simulator.
+
 ## Example Configuration
 
 A prototypical demonstration configuration is included in `docs/json/prototypical_interlocking.json`. This layout demonstrates sequential signaling, mutually locking facing points, and conditional 'OR' route locking.
