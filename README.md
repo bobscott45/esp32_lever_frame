@@ -123,6 +123,12 @@ To observe the interlocking rules in action, try the following sequences in the 
 
 ![North/South Box Screenshot 4](docs/images/CA38ADD2-954A-4621-9F74-9376CB706CB4.PNG)
 
+## Web UI Screenshots
+
+![Web UI Screenshot 1](docs/images/IMG_0041.jpeg)
+
+![Web UI Screenshot 2](docs/images/IMG_0042.jpeg)
+
 ## License
 
 This project is licensed under the GNU General Public License v3.0 (GPLv3). See the [LICENSE](LICENSE) file for more details.
