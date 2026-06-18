@@ -113,7 +113,7 @@ To observe the interlocking rules in action, try the following sequences in the 
 
 ## Interface Screenshots
 
-*Note: These are screenshots of the device displaying the North Junction and South Box configurations.*
+*Note: These are photos of the device displaying the North Junction and South Box configurations (perspective corrected by Gemini).*
 
 ![North/South Box Screenshot 1](docs/images/0E2AE271-7E60-4A7B-86E7-6BA4216B225F.PNG)
 
