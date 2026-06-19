@@ -15,9 +15,7 @@
  * along with esp32_lever_frame.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-//
-// Created by robert on 13/06/2026.
-//
+
 
 #ifndef LVGL_TEST_LEVER_H
 #define LVGL_TEST_LEVER_H

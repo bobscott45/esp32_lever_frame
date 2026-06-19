@@ -35,7 +35,7 @@
 // Number of raw CAN message buffers in the driver pool.  Each buffer holds one
 // CAN 2.0 frame (8 data bytes + header).  Tune for your platform's available
 // RAM and expected bus traffic.
-//
+
 // Maximum value is 254 (0xFE).
 
 #define USER_DEFINED_CAN_MSG_BUFFER_DEPTH            20     // must be >= 1; enforced by compiler

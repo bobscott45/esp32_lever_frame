@@ -96,7 +96,7 @@
 // The library uses a pool of message buffers of different sizes.  Tune these
 // for your platform's available RAM.  The total number of buffers is the sum
 // of all four types.  On 8-bit processors the total must not exceed 126.
-//
+
 //   BASIC    (16 bytes each)  -- most OpenLCB messages fit in this size
 //   DATAGRAM (72 bytes each)  -- datagram protocol messages
 //   SNIP     (256 bytes each) -- SNIP replies and Events with Payload
@@ -113,7 +113,7 @@
 // STREAM_BUFFER_LEN is the maximum bytes per stream data frame this node can
 // accept.  The spec uses a 2-byte field so the protocol max is 65535.  During
 // negotiation the smaller of the two nodes' buffer sizes wins.
-//
+
 // MAX_CONCURRENT_ACTIVE_STREAMS controls how many streams can be open at the
 // same time across all nodes.  Each active stream uses a small state struct,
 // not a full payload buffer.  The expensive RAM is governed by
@@ -143,7 +143,7 @@
 // =============================================================================
 // Configuration Memory (requires OPENLCB_COMPILE_MEMORY_CONFIGURATION)
 // =============================================================================
-//
+
 // The two address values tell the SNIP protocol where in your node's
 // configuration memory space the user-editable name and description strings
 // begin.  The standard layout puts the user name at address 0 and the user

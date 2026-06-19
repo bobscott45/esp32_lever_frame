@@ -36,7 +36,7 @@
 // TCP/IP OpenLCB message (preamble + body).  Must be large enough to hold the
 // largest expected single message.  The spec allows multi-part messages, so
 // each part must fit within this buffer.
-//
+
 // Minimum practical value: 17 (preamble) + 2 (MTI) + 6 (source) = 25
 // Default 1024 is generous for most use cases.
 

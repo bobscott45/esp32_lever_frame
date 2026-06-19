@@ -15,9 +15,7 @@
  * along with esp32_lever_frame.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-//
-// Created by robert on 27/05/2026.
-//
+
 
 #ifndef LCC_NODE_2_OPENLCB_I2C_DRIVERS_H
 #define LCC_NODE_2_OPENLCB_I2C_DRIVERS_H

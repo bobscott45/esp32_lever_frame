@@ -15,9 +15,7 @@
  * along with esp32_lever_frame.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-//
-// Created by robert on 27/05/2026.
-//
+
 #include "esp_log.h"
 #include "i2c_drivers.h"
 #include <i2cdev.h>
