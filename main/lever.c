@@ -94,6 +94,22 @@ static void lever_update_system_lock_ui(lv_obj_t *sw) {
     lv_obj_t *collar_btn = lv_obj_get_child(wrapper, 1);
     bool manual_locked = collar_btn && lv_obj_has_state(collar_btn, LV_STATE_CHECKED);
     
+    bool current_illegal = false;
+    lv_obj_t *frame = lv_obj_get_parent(wrapper);
+    int lever_index = lv_obj_get_index(wrapper);
+    const tab_def_t *tab_def = (const tab_def_t *)lv_obj_get_user_data(frame);
+    if (tab_def) {
+        bool lever_states[tab_def->lever_count];
+        for (int i = 0; i < tab_def->lever_count; i++) {
+            lv_obj_t *other_wrapper = lv_obj_get_child(frame, i);
+            lv_obj_t *other_container = lv_obj_get_child(other_wrapper, 0);
+            lv_obj_t *other_switch_group = lv_obj_get_child(other_container, 1);
+            lv_obj_t *other_sw = lv_obj_get_child(other_switch_group, 1);
+            lever_states[i] = lv_obj_has_state(other_sw, LV_STATE_CHECKED);
+        }
+        current_illegal = lever_is_state_illegal(tab_def, lever_states, lever_index);
+    }
+    
     // Switch is unclickable if either system locked OR manually locked
     if (system_locked || manual_locked) {
         lv_obj_remove_flag(sw, LV_OBJ_FLAG_CLICKABLE);
@@ -115,16 +131,28 @@ static void lever_update_system_lock_ui(lv_obj_t *sw) {
         lv_obj_t *collar_lbl = lv_obj_get_child(collar_btn, 0);
         if (collar_lbl) {
             const char *current_text = lv_label_get_text(collar_lbl);
-            if (manual_locked) {
+            if (current_illegal) {
+                if (strcmp(current_text, "ALARM") != 0) lv_label_set_text(collar_lbl, "ALARM");
+                lv_obj_set_style_bg_color(collar_btn, lv_color_hex(0xff8800), LV_PART_MAIN | LV_STATE_DEFAULT);
+                lv_obj_set_style_bg_color(collar_btn, lv_color_hex(0xff8800), LV_PART_MAIN | LV_STATE_CHECKED);
+                lv_obj_set_style_text_color(collar_lbl, lv_color_hex(0xffffff), 0);
+            } else if (manual_locked) {
                 if (strcmp(current_text, "LOCKED") != 0) lv_label_set_text(collar_lbl, "LOCKED");
-                lv_obj_clear_state(collar_btn, LV_STATE_DISABLED);
+                lv_obj_set_style_bg_color(collar_btn, lv_color_hex(0x252525), LV_PART_MAIN | LV_STATE_DEFAULT);
+                lv_obj_set_style_bg_color(collar_btn, lv_color_hex(0xcc3333), LV_PART_MAIN | LV_STATE_CHECKED);
+                lv_obj_set_style_text_color(collar_lbl, lv_color_hex(0xffffff), 0);
             } else if (system_locked) {
                 if (strcmp(current_text, "INTERLOCK") != 0) lv_label_set_text(collar_lbl, "INTERLOCK");
-                lv_obj_clear_state(collar_btn, LV_STATE_DISABLED);
+                lv_obj_set_style_bg_color(collar_btn, lv_color_hex(0x252525), LV_PART_MAIN | LV_STATE_DEFAULT);
+                lv_obj_set_style_bg_color(collar_btn, lv_color_hex(0xcc3333), LV_PART_MAIN | LV_STATE_CHECKED);
+                lv_obj_set_style_text_color(collar_lbl, lv_color_hex(0xaaaaaa), 0);
             } else {
                 if (strcmp(current_text, "UNLOCKED") != 0) lv_label_set_text(collar_lbl, "UNLOCKED");
-                lv_obj_clear_state(collar_btn, LV_STATE_DISABLED);
+                lv_obj_set_style_bg_color(collar_btn, lv_color_hex(0x252525), LV_PART_MAIN | LV_STATE_DEFAULT);
+                lv_obj_set_style_bg_color(collar_btn, lv_color_hex(0xcc3333), LV_PART_MAIN | LV_STATE_CHECKED);
+                lv_obj_set_style_text_color(collar_lbl, lv_color_hex(0xffffff), 0);
             }
+            lv_obj_clear_state(collar_btn, LV_STATE_DISABLED);
         }
     }
 }
@@ -565,6 +593,16 @@ lv_obj_t *lever_create(lv_obj_t *parent, const void *lever_def_ptr, uint8_t labe
             break;
         case LEVER_TYPE_FACING_POINTS:
             type_color = LEVER_COLOR_FACING_POINTS;
+            up_text = "NORMAL";
+            down_text = "THROWN";
+            break;
+        case LEVER_TYPE_BROWN:
+            type_color = LEVER_COLOR_BROWN;
+            up_text = "NORMAL";
+            down_text = "THROWN";
+            break;
+        case LEVER_TYPE_GREEN:
+            type_color = LEVER_COLOR_GREEN;
             up_text = "NORMAL";
             down_text = "THROWN";
             break;

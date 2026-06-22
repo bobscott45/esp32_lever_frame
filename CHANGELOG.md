@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-06-22
+
+### Added
+- Added "Accept & Warn" (Alarm Mode) override policy.
+- Added visual ALARM state (orange text/collar) when external commands violate local interlocking rules.
+- Added two new traditional lever colors: Level Crossing (Brown) and Release/Gong (Green).
+- Created a comprehensive `docs/USER_GUIDE.md` replacing the old Web UI guide.
+
+### Changed
+- Fixed tab title rendering bug (title did not appear until edit field was focused).
+- Updated interlocking engine so that both conflicting levers involved in a violation will correctly flag the ALARM state.
+- Enhanced JMRI CDI configuration to fully expose LCC Master Enable, Startup Mode, and Conflict Policy settings remotely.
+
 ## [1.1.2] - 2026-06-19
 
 ### Removed

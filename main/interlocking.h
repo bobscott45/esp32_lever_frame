@@ -12,7 +12,9 @@ typedef enum {
     LEVER_TYPE_DISTANT_SIGNAL,
     LEVER_TYPE_POINTS,
     LEVER_TYPE_FACING_POINTS,
-    LEVER_TYPE_SPARE
+    LEVER_TYPE_SPARE,
+    LEVER_TYPE_BROWN,
+    LEVER_TYPE_GREEN
 } lever_type_t;
 
 typedef struct {
@@ -67,5 +69,10 @@ typedef struct {
  * @return true if the movement is permitted, false if blocked by interlocking
  */
 bool lever_evaluate_interlocking(const tab_def_t *tab_def, const bool *lever_states, int lever_index_to_move, bool target_state_thrown);
+
+/**
+ * Checks if the current state of a specific lever is in violation of the interlocking rules.
+ */
+bool lever_is_state_illegal(const tab_def_t *tab_def, const bool *lever_states, int lever_index_to_check);
 
 #endif // ESP32_LEVER_FRAME_INTERLOCKING_H

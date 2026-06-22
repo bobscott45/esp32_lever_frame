@@ -106,6 +106,8 @@ const char *lever_type_to_str(lever_type_t type) {
         case LEVER_TYPE_DISTANT_SIGNAL: return "DISTANT_SIGNAL";
         case LEVER_TYPE_POINTS:         return "POINTS";
         case LEVER_TYPE_FACING_POINTS:  return "FACING_POINTS";
+        case LEVER_TYPE_BROWN:          return "BROWN";
+        case LEVER_TYPE_GREEN:          return "GREEN";
         case LEVER_TYPE_SPARE:
         default:                        return "SPARE";
     }
@@ -117,6 +119,8 @@ lever_type_t str_to_lever_type(const char *str) {
     if (strcmp(str, "DISTANT_SIGNAL") == 0) return LEVER_TYPE_DISTANT_SIGNAL;
     if (strcmp(str, "POINTS") == 0)         return LEVER_TYPE_POINTS;
     if (strcmp(str, "FACING_POINTS") == 0)  return LEVER_TYPE_FACING_POINTS;
+    if (strcmp(str, "BROWN") == 0)          return LEVER_TYPE_BROWN;
+    if (strcmp(str, "GREEN") == 0)          return LEVER_TYPE_GREEN;
     return LEVER_TYPE_SPARE;
 }
 

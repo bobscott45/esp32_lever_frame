@@ -505,12 +505,16 @@
             .lever-grid { gap: 10px; }
             .lever-actions { justify-content: flex-start; }
         }
+        input:invalid {
+            border-color: #ff3b30;
+            background-color: rgba(255, 59, 48, 0.1);
+        }
     </style>
 </head>
 <body>
     <header>
         <div>
-            <h1>Lever Frame Configurator <span style="font-size: 14px; color: var(--text-muted); font-weight: normal; vertical-align: middle;">v1.1</span></h1>
+            <h1>Lever Frame Configurator <span id="firmware-version" style="font-size: 14px; color: var(--text-muted); font-weight: normal; vertical-align: middle;">v1.1</span></h1>
             <div class="subtitle">ESP32 Railway Signaling Control Interface</div>
         </div>
         <div class="header-actions" style="display: flex; gap: 20px; align-items: flex-start;">
@@ -683,6 +687,7 @@
         let configData = { tabs: [] };
         let activeTabIdx = 0;
         let originalConfigJson = "";
+        let globalNodeId = "00.00.00.00.00.00";
 
         function checkChanges() {
             const currentJson = JSON.stringify(configData);
@@ -730,10 +735,30 @@
                     document.getElementById('status-ap-ip').innerText = status.ap_ip || '-';
                     document.getElementById('status-sta-ip').innerText = status.sta_ip || '-';
                     document.getElementById('status-tcp-port').innerText = status.tcp_port || '-';
+                    if (status.node_id) {
+                        globalNodeId = status.node_id;
+                    }
+                    if (status.version) {
+                        document.getElementById('firmware-version').innerText = 'v' + status.version;
+                    }
                 }
             } catch (e) {
                 console.error("Error fetching status:", e);
             }
+        }
+
+        function autofillEvents(idx) {
+            const currentTab = configData.tabs[activeTabIdx];
+            if (!currentTab || !currentTab.levers[idx]) return;
+            
+            let normalHex = (idx * 2 + 1).toString(16).padStart(2, '0').toUpperCase();
+            let reverseHex = (idx * 2 + 2).toString(16).padStart(2, '0').toUpperCase();
+            
+            currentTab.levers[idx].lcc_event_normal = `${globalNodeId}.00.${normalHex}`;
+            currentTab.levers[idx].lcc_event_reversed = `${globalNodeId}.00.${reverseHex}`;
+            
+            renderEditor();
+            checkChanges();
         }
 
         async function fetchConfig() {
@@ -808,9 +833,19 @@
             currentTab.label_lines = linesVal;
             currentTab.label_line_height = heightVal;
 
-            document.getElementById('tab-name-input').value = currentTab.name || '';
+            if (!currentTab.name) {
+                currentTab.name = `Frame ${activeTabIdx + 1}`;
+            }
+
+            document.getElementById('preview-tab-name').innerText = currentTab.name;
             
             setTimeout(() => {
+                const tabNameInput = document.getElementById('tab-name-input');
+                if (tabNameInput) {
+                    tabNameInput.value = currentTab.name;
+                    tabNameInput.setAttribute('value', currentTab.name);
+                }
+
                 const linesInput = document.getElementById('label-lines-input');
                 if (linesInput) {
                     linesInput.value = linesVal;
@@ -913,6 +948,8 @@
                                 <option value="DISTANT_SIGNAL" ${lever.type === 'DISTANT_SIGNAL' ? 'selected' : ''}>Distant Signal (Yellow)</option>
                                 <option value="POINTS" ${lever.type === 'POINTS' ? 'selected' : ''}>Points (Black)</option>
                                 <option value="FACING_POINTS" ${lever.type === 'FACING_POINTS' ? 'selected' : ''}>Facing Points (Blue)</option>
+                                <option value="BROWN" ${lever.type === 'BROWN' ? 'selected' : ''}>Level Crossing (Brown)</option>
+                                <option value="GREEN" ${lever.type === 'GREEN' ? 'selected' : ''}>Release / Gong (Green)</option>
                                 <option value="SPARE" ${lever.type === 'SPARE' ? 'selected' : ''}>Spare (White)</option>
                             </select>
                         </div>
@@ -934,12 +971,15 @@
                                 </div>
                             </div>
                             <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: rgba(0,0,0,0.1); padding: 8px; border-radius: 6px;">
-                                <strong style="font-size: 12px; color: #a4b0be; text-transform: uppercase;">LCC Events:</strong>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <strong style="font-size: 12px; color: #a4b0be; text-transform: uppercase;">LCC Events:</strong>
+                                    <button class="btn btn-small" onclick="autofillEvents(${idx})" style="padding: 2px 6px; font-size: 10px;" title="Auto-fill with Node ID">Auto-fill</button>
+                                </div>
                                 <div style="display: flex; gap: 8px; align-items: center;">
                                     <span style="font-size: 12px; color: var(--text-muted);">Normal:</span>
-                                    <input type="text" placeholder="e.g. 02.01.57.00.00.01.00.01" value="${escapeHtml(lever.lcc_event_normal || '')}" onchange="updateLeverProp(${idx}, 'lcc_event_normal', this.value)" style="width: 180px; font-size: 12px; padding: 4px;">
+                                    <input type="text" pattern="^([0-9A-Fa-f]{2}\\.){7}[0-9A-Fa-f]{2}$" title="8 pairs of hex digits separated by dots (e.g. 02.01.57.00.00.01.00.01)" placeholder="e.g. 02.01.57.00.00.01.00.01" value="${escapeHtml(lever.lcc_event_normal || '')}" onchange="updateLeverProp(${idx}, 'lcc_event_normal', this.value)" style="width: 180px; font-size: 12px; padding: 4px;">
                                     <span style="font-size: 12px; color: var(--text-muted);">Reversed:</span>
-                                    <input type="text" placeholder="e.g. 02.01.57.00.00.01.00.02" value="${escapeHtml(lever.lcc_event_reversed || '')}" onchange="updateLeverProp(${idx}, 'lcc_event_reversed', this.value)" style="width: 180px; font-size: 12px; padding: 4px;">
+                                    <input type="text" pattern="^([0-9A-Fa-f]{2}\\.){7}[0-9A-Fa-f]{2}$" title="8 pairs of hex digits separated by dots (e.g. 02.01.57.00.00.01.00.02)" placeholder="e.g. 02.01.57.00.00.01.00.02" value="${escapeHtml(lever.lcc_event_reversed || '')}" onchange="updateLeverProp(${idx}, 'lcc_event_reversed', this.value)" style="width: 180px; font-size: 12px; padding: 4px;">
                                     <label style="display: flex; align-items: center; gap: 4px; font-size: 12px; margin-left: 8px; cursor: pointer;">
                                         <input type="checkbox" ${lever.lcc_enabled !== false ? 'checked' : ''} onchange="updateLeverProp(${idx}, 'lcc_enabled', this.checked)">
                                         Enabled
@@ -1407,6 +1447,13 @@
         }
 
         async function saveConfiguration() {
+            const invalidInputs = document.querySelectorAll('input:invalid');
+            if (invalidInputs.length > 0) {
+                showToast("Please fix the invalid fields highlighted in red before saving.", "error");
+                invalidInputs[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+
             if (!confirm("Warning: Saving these changes will completely reset the device's saved lever states to their defaults.\n\nAre you sure you want to proceed and reboot the device?")) {
                 return;
             }

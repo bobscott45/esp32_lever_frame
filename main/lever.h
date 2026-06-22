@@ -37,6 +37,8 @@
 #define LEVER_COLOR_POINTS         0x000000 // Black
 #define LEVER_COLOR_FACING_POINTS  0x2b58b5 // Royal Blue
 #define LEVER_COLOR_SPARE          0xb8b8b8 // Medium Light Gray
+#define LEVER_COLOR_BROWN          0x5C4033 // Dark Brown
+#define LEVER_COLOR_GREEN          0x228B22 // Forest Green
 
 #include "interlocking.h"
 
