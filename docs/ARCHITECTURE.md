@@ -88,3 +88,22 @@ The following architectural improvements were recently implemented to ensure mas
 
 3. **Event Loop Usage:**
    Direct function pointer callbacks were completely eliminated between the core logic and the networking/UI layers. The project now uses the standard `esp_event` loop (`LEVER_SYSTEM_EVENTS`) to broadcast `EVENT_LEVER_STATE_CHANGED` and `EVENT_CONFIG_RELOADED`. This allows multiple independent components (like OpenLCB and the UI) to listen to state changes without tightly coupling their lifecycles.
+
+---
+
+## Dual-Core Task Pinning Strategy
+
+The ESP32-S3 contains two cores: **Core 0** (PRO_CPU) and **Core 1** (APP_CPU). To maximize performance and ensure a flawlessly smooth user interface, this project explicitly delegates tasks to specific cores using `xTaskCreatePinnedToCore()`.
+
+*   **Core 0 (Networking & Logic):** 
+    *   **Wi-Fi Driver & LwIP Stack**
+    *   **Web Server (`httpd`)**
+    *   **OpenLCB / LCC Node Task**
+    *   **TCP / GridConnect Server Task**
+    *   **CAN Bus (TWAI) RX Task**
+    *   **System Event Loop (`esp_event`)**
+    *   *Purpose:* Handles all complex protocol parsing, interrupt routines, network bridges, and non-volatile storage (NVS) writes. This frees up the other core entirely.
+
+*   **Core 1 (Graphics & User Interface):** 
+    *   **LVGL Timer Handler Task (`lvgl_port_task`)**
+    *   *Purpose:* Exclusively runs the graphics rendering pipeline. Because Core 1 is isolated from network interrupts and LCC message processing, it can push RGB pixel data to the PSRAM at maximum bandwidth, eliminating any micro-stutters or tearing that would otherwise occur if it had to yield to network tasks.
