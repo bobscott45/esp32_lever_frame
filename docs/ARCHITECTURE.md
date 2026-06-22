@@ -79,7 +79,7 @@ Because `main.c` relies only on `display_hal.h` for physical setup, and `ui_port
 
 ## Dual-Core Task Pinning Strategy
 
-The ESP32-S3 contains two cores: **Core 0** (PRO_CPU) and **Core 1** (APP_CPU). To maximize performance and ensure a flawlessly smooth user interface, this project explicitly delegates tasks to specific cores using `xTaskCreatePinnedToCore()`.
+The ESP32-S3 contains two cores: **Core 0** (PRO_CPU) and **Core 1** (APP_CPU). To maximize performance and ensure a smooth user interface, this project explicitly delegates tasks to specific cores using `xTaskCreatePinnedToCore()`.
 
 *   **Core 0 (Networking & Logic):** 
     *   **Wi-Fi Driver & LwIP Stack**
