@@ -1,6 +1,7 @@
 #include "unity.h"
 #include "controller.h"
 #include <string.h>
+#include <stdlib.h>
 
 void setUp(void) {
     // controller_free is safely called inside init, but let's be sure
@@ -107,11 +108,58 @@ void test_controller_request_move(void) {
     config_manager_deinit();
 }
 
+void test_controller_state_serialization(void) {
+    lever_system_config_t config;
+    memset(&config, 0, sizeof(config));
+    tab_def_t tabs[2];
+    memset(tabs, 0, sizeof(tabs));
+    tabs[0].lever_count = 3;
+    tabs[1].lever_count = 5;
+    config.tabs = tabs;
+    config.tab_count = 2;
+    
+    controller_init(&config);
+    
+    // Set some state
+    controller_set_lever_state(0, 1, true); // Tab 0, Lever 1 = THROWN
+    controller_set_lever_lock(0, 2, true);  // Tab 0, Lever 2 = LOCKED
+    controller_set_lever_state(1, 4, true); // Tab 1, Lever 4 = THROWN
+    controller_set_active_tab(1);
+    
+    // Serialize
+    size_t blob_size = controller_get_serialized_size();
+    uint8_t *blob = malloc(blob_size);
+    controller_get_serialized_state(blob, blob_size);
+    
+    TEST_ASSERT_NOT_NULL(blob);
+    TEST_ASSERT_GREATER_THAN(0, blob_size);
+    
+    // Wipe current state
+    controller_free();
+    controller_init(&config); // Reset to 0
+    TEST_ASSERT_FALSE(controller_get_lever_state(0, 1));
+    TEST_ASSERT_EQUAL_INT(0, controller_get_active_tab());
+    
+    // Restore from blob
+    bool success = controller_apply_serialized_state(blob, blob_size);
+    TEST_ASSERT_TRUE(success);
+    
+    // Verify state was perfectly restored
+    TEST_ASSERT_TRUE(controller_get_lever_state(0, 1));
+    TEST_ASSERT_TRUE(controller_get_lever_lock(0, 2));
+    TEST_ASSERT_TRUE(controller_get_lever_state(1, 4));
+    TEST_ASSERT_FALSE(controller_get_lever_state(1, 0)); // Was untouched
+    TEST_ASSERT_EQUAL_INT(1, controller_get_active_tab());
+    
+    free(blob);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_controller_init_null_config);
     RUN_TEST(test_controller_init_valid_config);
     RUN_TEST(test_controller_out_of_bounds);
     RUN_TEST(test_controller_request_move);
+    RUN_TEST(test_controller_state_serialization);
     return UNITY_END();
 }
