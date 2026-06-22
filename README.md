@@ -160,7 +160,7 @@ To observe the interlocking rules in action, try the following sequences in the 
 
 ## Known Issues
 
-*   **Screen Glitches / Missing Graphics**: The ESP32-S3 hardware is pushing its limits to render this complex, high-resolution LVGL interface. Very occasionally, you may notice that parts of the screen do not paint correctly or appear slightly glitched. You can resolve this by forcing a complete repaint—the easiest way is to tap any lever's label to open its settings menu, and then immediately tap outside the menu to dismiss it.
+*   **Screen Glitches**: The ESP32-S3 hardware is pushing its limits to render this complex, high-resolution LVGL interface. Very occasionally, you may notice that parts of the screen do not paint correctly or appear slightly glitched. You can resolve this by forcing a complete repaint—the easiest way is to tap any lever's label to open its settings menu, and then immediately tap outside the menu to dismiss it.
 
 ## License
 
