@@ -304,8 +304,11 @@ static void on_controller_state_changed(void* handler_args, esp_event_base_t bas
     int lever_index = ev->lever_index;
     bool new_state = ev->new_state;
 
-    // Save state to NVS
-    state_manager_save(config_manager_get_hash());
+    // Save state to NVS (wrap in UI lock to prevent PSRAM contention with LVGL rendering during flash writes)
+    if (ui_port_lock(-1)) {
+        state_manager_save(config_manager_get_hash());
+        ui_port_unlock();
+    }
     
     // Fire OpenLCB event
     const lever_system_config_t *system_config = config_manager_get_current();
