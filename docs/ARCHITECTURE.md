@@ -76,20 +76,6 @@ Because `main.c` relies only on `display_hal.h` for physical setup, and `ui_port
 
 ---
 
-## Recent Project Structure Improvements
-
-The following architectural improvements were recently implemented to ensure massive scalability and cleaner decoupling:
-
-1. **Hardware Abstraction Layer for Displays (Display HAL):** 
-   A lightweight `display_hal` component was introduced to wrap all vendor-specific BSP calls. This prevents `main.c` from being polluted with display-specific macros and initialization structures.
-
-2. **Decoupled LVGL Porting:**
-   The `bsp/lvgl_port` code was wrapped behind a clean `ui_porting` component. This ensures LVGL memory allocation, threading locks, and touch dispatching are handled safely away from the application's business logic.
-
-3. **Event Loop Usage:**
-   Direct function pointer callbacks were completely eliminated between the core logic and the networking/UI layers. The project now uses the standard `esp_event` loop (`LEVER_SYSTEM_EVENTS`) to broadcast `EVENT_LEVER_STATE_CHANGED` and `EVENT_CONFIG_RELOADED`. This allows multiple independent components (like OpenLCB and the UI) to listen to state changes without tightly coupling their lifecycles.
-
----
 
 ## Dual-Core Task Pinning Strategy
 
