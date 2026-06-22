@@ -9,8 +9,8 @@ cd "$(dirname "$0")" || exit 1
 NEW_VERSION=$1
 
 if [ -z "$NEW_VERSION" ]; then
-    echo "Usage: ./bump_version.sh <new_version>"
-    echo "Example: ./bump_version.sh 1.3.0"
+    echo "Usage: ./utils/bump_version.sh <new_version>"
+    echo "Example: ./utils/bump_version.sh 1.3.0"
     exit 1
 fi
 
