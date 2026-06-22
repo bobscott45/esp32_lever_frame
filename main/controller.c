@@ -57,3 +57,24 @@ const bool* controller_get_tab_states(int tab_index) {
     if (!s_tab_lever_states || tab_index < 0 || tab_index >= s_tab_count) return NULL;
     return s_tab_lever_states[tab_index];
 }
+
+bool controller_request_lever_move(int tab_index, int lever_index, bool target_state_thrown) {
+    if (!s_tab_lever_states || tab_index < 0 || tab_index >= s_tab_count) return false;
+    if (lever_index < 0 || lever_index >= s_lever_counts[tab_index]) return false;
+    
+    const lever_system_config_t *config = config_manager_get_current();
+    if (!config || tab_index >= config->tab_count) return false;
+    
+    const tab_def_t *tab_def = &config->tabs[tab_index];
+    const bool *lever_states = s_tab_lever_states[tab_index];
+    
+    // Ask the interlocking model if this is allowed
+    bool allowed = lever_evaluate_interlocking(tab_def, lever_states, lever_index, target_state_thrown);
+    
+    if (allowed) {
+        s_tab_lever_states[tab_index][lever_index] = target_state_thrown;
+        return true;
+    }
+    
+    return false;
+}

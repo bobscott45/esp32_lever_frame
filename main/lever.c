@@ -190,8 +190,19 @@ static void lever_switch_event_cb(lv_event_t * e) {
     int lever_index = lv_obj_get_index(wrapper);
     bool is_thrown = lv_obj_has_state(sw, LV_STATE_CHECKED);
     
-    // Update the controller state immediately before re-evaluating locks
-    controller_set_lever_state(tab_index, lever_index, is_thrown);
+    // Request the controller to move the lever
+    bool accepted = controller_request_lever_move(tab_index, lever_index, is_thrown);
+    
+    if (!accepted) {
+        // If the controller rejects the move, revert the UI state and abort
+        if (is_thrown) {
+            lv_obj_clear_state(sw, LV_STATE_CHECKED);
+        } else {
+            lv_obj_add_state(sw, LV_STATE_CHECKED);
+        }
+        lever_switch_refresh_cb(e); // Fix the labels back
+        return;
+    }
     
     // Update all levers in this frame to reflect new dependencies
     lever_frame_update_system_locks(frame);

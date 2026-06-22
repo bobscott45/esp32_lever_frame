@@ -36,6 +36,10 @@ target_link_libraries(run_config_tests PRIVATE unity)
 add_executable(run_controller_tests
     test_controller.c
     ../controller.c
+    ../config_manager.c
+    ../interlocking.c
+    mocks/mock_nvs.c
+    ${CJSON_DIR}/cJSON.c
 )
-target_include_directories(run_controller_tests PRIVATE .. mocks)
+target_include_directories(run_controller_tests PRIVATE .. mocks ${CJSON_DIR})
 target_link_libraries(run_controller_tests PRIVATE unity)

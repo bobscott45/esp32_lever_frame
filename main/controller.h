@@ -15,4 +15,7 @@ void controller_set_lever_state(int tab_index, int lever_index, bool is_thrown);
 // Returns a pointer to the array of lever states for a specific tab
 const bool* controller_get_tab_states(int tab_index);
 
+// Request a move (returns true if accepted, false if blocked by interlocking)
+bool controller_request_lever_move(int tab_index, int lever_index, bool target_state_thrown);
+
 #endif // CONTROLLER_H
