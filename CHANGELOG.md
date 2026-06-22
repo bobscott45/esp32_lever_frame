@@ -8,10 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.3.0] - 2026-06-22
 
 ### Added
-- 
+- Implemented a formal Dual-Core Task Pinning architecture, locking the LVGL UI renderer exclusively to Core 1 while placing all networking, Wi-Fi, and NVS storage tasks on Core 0.
+- Introduced `display_hal` component to serve as a hardware abstraction layer for physical vendor displays.
+- Introduced `ui_porting` component to cleanly separate LVGL thread locks and display driver mappings from the main application.
 
 ### Changed
-- 
+- Migrated system-wide inter-component communication from tightly-coupled function callbacks to the standard ESP-IDF `esp_event` loop, fully decoupling the UI, core logic, and OpenLCB networking.
+- Fixed an issue where saving lever state to NVS could cause the RGB display DMA to starve and break up/tear the screen by properly wrapping flash writes in the UI mutex block.
+- Removed the slide animation from the system info overlay, causing it to snap instantly into view like the lever dropdown to prevent full-screen redraw stuttering.
+- Reorganized the project root by moving build and version bash scripts into a dedicated `utils/` folder.
 
 ## [1.2.0] - 2026-06-22
 
