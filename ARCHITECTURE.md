@@ -16,6 +16,7 @@ This is the central "model" of the system. It handles all state management and b
 - **Interlocking (`interlocking.c`)**: Pure algorithmic logic that evaluates whether a lever can be thrown based on the state of other levers and the configuration rules.
 - **Config Manager (`config_manager.c`)**: Handles loading and parsing the system configuration (e.g., from JSON or NVS).
 - **State Manager (`state_manager.c`)**: Handles persistence of the current system state (lever positions, locks, active tab) to non-volatile storage (NVS) to survive reboots.
+- **System Events (`system_events.c`)**: Defines the global `esp_event` loop definitions used for inter-component communication (e.g. broadcasting lever state changes and configuration reloads).
 
 ### 2. `ui_lever_frame` (Presentation)
 This component is responsible for rendering the UI using LVGL.
@@ -29,17 +30,25 @@ This component handles the OpenLCB/LCC network stack.
 - It listens for controller state changes and translates them into outgoing OpenLCB events.
 - It has no dependencies on LVGL or the UI frame.
 
-### 4. `lcc_drivers` (Hardware Interfaces)
+### 4. `display_hal` (Hardware Abstraction Layer)
+Wraps the vendor-specific Board Support Package (BSP) to abstract the physical display initialization and backlight control.
+
+### 5. `ui_porting` (LVGL Port Abstraction)
+Wraps the LVGL porting initialization (display and touch drivers), keeping LVGL internals and threading locks out of the main application code.
+
+### 6. `lcc_drivers` (Hardware Interfaces)
 Low-level drivers for physical network interfaces (CAN bus via TWAI, TCP/IP via Wi-Fi/Ethernet). 
 
-### 5. `main` (Orchestrator)
+### 7. `main` (Orchestrator)
 The entry point of the application. It ties all the components together.
 - Initializes hardware (NVS, Wi-Fi, I2C, SPI).
-- Initializes the physical display (BSP) and attaches it to LVGL.
+- Initializes the default `esp_event` loop for system-wide broadcasts.
+- Initializes the physical display via `display_hal`.
+- Initializes LVGL and input devices via `ui_porting`.
 - Initializes the `lever_core` components.
 - Initializes the LVGL UI (`ui_lever_frame_init`).
 - Initializes the `openlcb_node`.
-- Registers the interconnecting callbacks (e.g., hooking `openlcb` event generation to the `controller`'s state change callback).
+- Registers event handlers to route `esp_event` broadcasts to appropriate components (e.g., routing a lever state change event to the OpenLCB producer).
 
 ---
 
@@ -49,74 +58,33 @@ Because the UI component (`ui_lever_frame`) is decoupled from the hardware, addi
 
 To add support for a new display (e.g., swapping to a P4 screen), follow these steps:
 
-### 1. Add the BSP Component
-Find the Board Support Package (BSP) for your new display in the ESP Component Registry or place it in your `components/` folder. Add it as a dependency in `main/idf_component.yml`:
-```yaml
-dependencies:
-  your_vendor/new_display_bsp: "*"
-```
+### 1. Update `display_hal` Component
+The `display_hal` component is the central abstraction layer for your physical screen. To swap displays:
+- Update `components/display_hal/idf_component.yml` to require your new display's Board Support Package (BSP).
+- Update `components/display_hal/CMakeLists.txt` to `REQUIRES` the new BSP.
+- Rewrite `components/display_hal/display_hal.c` to use your new BSP's initialization sequence.
 
-### 2. Update `main/CMakeLists.txt`
-Change the `PRIV_REQUIRES` line to include your new BSP component instead of the old one.
-
-### 3. Replace Initialization in `main.c`
-In `main.c`, remove the includes and initialization code for the old display (e.g., `waveshare_esp32_s3_touch_lcd_4_3.h`) and replace it with your new display's API.
-
-You need to obtain two handles from your new BSP:
-1. `esp_lcd_panel_handle_t` (The LCD panel handle)
-2. `esp_lcd_touch_handle_t` (The touch controller handle)
-
-Example:
+You must implement the three functions exposed by `display_hal.h`:
 ```c
-#include "new_display_bsp.h"
-
-// ... inside app_main() ...
-
-esp_lcd_panel_handle_t panel_handle = NULL;
-esp_lcd_touch_handle_t touch_handle = NULL;
-
-// Call your new display's init function
-new_display_bsp_init(&panel_handle, &touch_handle);
-
-// Attach the handles to LVGL
-const lvgl_port_display_cfg_t disp_cfg = {
-    .io_handle = NULL,
-    .panel_handle = panel_handle,
-    .buffer_size = 800 * 480 * sizeof(uint16_t),
-    .double_buffer = true,
-    .hres = 800,
-    .vres = 480,
-    .monochrome = false,
-    .color_format = LV_COLOR_FORMAT_RGB565,
-    .flags = {
-        .buff_dma = true,
-        .buff_spiram = true,
-    }
-};
-lvgl_disp = lvgl_port_add_disp(&disp_cfg);
-
-// Attach touch
-const lvgl_port_touch_cfg_t touch_cfg = {
-    .disp = lvgl_disp,
-    .handle = touch_handle,
-};
-lvgl_port_add_touch(&touch_cfg);
+esp_err_t display_hal_init(esp_lcd_panel_handle_t *panel_handle_out, esp_lcd_touch_handle_t *touch_handle_out);
+esp_err_t display_hal_backlight_on(void);
+esp_err_t display_hal_backlight_off(void);
 ```
 
-### 4. Adjust Backlight and Sleep Logic
-If your `main.c` handles display dimming or sleep logic, replace the specific backlight calls (like `waveshare_rgb_lcd_bl_on()`) with the equivalent functions provided by your new BSP.
+### 2. No other changes are needed
+Because `main.c` relies only on `display_hal.h` for physical setup, and `ui_porting.h` for LVGL setup, you do not need to change anything outside of the `display_hal` component. The system will automatically use the handles returned by `display_hal_init` to power the UI.
 
 ---
 
-## Project Structure Improvements
+## Recent Project Structure Improvements
 
-The current architecture is solid, but the following improvements could be considered as the project scales:
+The following architectural improvements were recently implemented to ensure massive scalability and cleaner decoupling:
 
 1. **Hardware Abstraction Layer for Displays (Display HAL):** 
-   Currently, `main.c` directly calls functions like `waveshare_rgb_lcd_bl_on()`. If you plan to support multiple different displays simultaneously in the same codebase using `#ifdef` macros, it would be cleaner to create a lightweight wrapper component (e.g., `components/display_hal`) that exposes a generic `display_init()`, `display_backlight_on()`, and `display_backlight_off()`. `main.c` would call this wrapper, and the `#ifdef` logic would be contained within the wrapper.
+   A lightweight `display_hal` component was introduced to wrap all vendor-specific BSP calls. This prevents `main.c` from being polluted with display-specific macros and initialization structures.
 
-2. **Decouple LVGL Porting:**
-   The `bsp/lvgl_port` code is currently housed inside the `main` component directory or as a separate component. Ensuring that LVGL initialization is handled consistently across different screens might benefit from a dedicated `ui_porting` component if you migrate away from standard ESP-IDF BSPs.
+2. **Decoupled LVGL Porting:**
+   The `bsp/lvgl_port` code was wrapped behind a clean `ui_porting` component. This ensures LVGL memory allocation, threading locks, and touch dispatching are handled safely away from the application's business logic.
 
 3. **Event Loop Usage:**
-   Currently, components communicate via direct function callbacks (e.g., `controller_set_state_changed_cb`). For a larger system, moving to `esp_event` (the default ESP-IDF event loop) for broadcasting system-wide events (like "Config Reloaded", "Network Connected", or "Lever State Changed") would decouple components even further, allowing multiple listeners without managing arrays of function pointers.
+   Direct function pointer callbacks were completely eliminated between the core logic and the networking/UI layers. The project now uses the standard `esp_event` loop (`LEVER_SYSTEM_EVENTS`) to broadcast `EVENT_LEVER_STATE_CHANGED` and `EVENT_CONFIG_RELOADED`. This allows multiple independent components (like OpenLCB and the UI) to listen to state changes without tightly coupling their lifecycles.
