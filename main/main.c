@@ -15,7 +15,7 @@
  * along with esp32_lever_frame.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "bsp/board.h"
+#include "display_hal.h"
 #include "bsp/lvgl_port.h"
 #include "lever.h"
 #include "lever_frame.h"
@@ -331,7 +331,7 @@ static void rebuild_ui_timer_cb(lv_timer_t *timer)
         
         // Step 1: Turn off backlight and delete old UI to prevent tearing
         ESP_LOGI(TAG, "Config update: Turning off backlight and clearing UI");
-        waveshare_rgb_lcd_bl_off();
+        display_hal_backlight_off();
         
         info_overlay_close_immediate();
         lever_close_all_drawers();
@@ -359,7 +359,7 @@ static void rebuild_ui_timer_cb(lv_timer_t *timer)
     } else {
         // Step 3: Turn backlight back on
         ESP_LOGI(TAG, "Config update: Restoring backlight");
-        waveshare_rgb_lcd_bl_on();
+        display_hal_backlight_on();
         
         state = 0;
     }
@@ -377,7 +377,7 @@ void app_main(void)
     esp_lcd_touch_handle_t touch = NULL;
 
     // 1. Initialize hardware drivers and LVGL first
-    ESP_ERROR_CHECK(waveshare_esp32_s3_rgb_lcd_init(&panel, &touch));
+    ESP_ERROR_CHECK(display_hal_init(&panel, &touch));
     ESP_ERROR_CHECK(lvgl_port_init(panel, touch));
 
     // Show a Loading Splash Screen immediately
@@ -403,7 +403,7 @@ void app_main(void)
     // Give the RGB panel time to lock onto the sync signals before turning the backlight on.
     // 1500ms ensures the panel sync is perfectly stable, preventing horizontal image wrapping.
     vTaskDelay(pdMS_TO_TICKS(1500));
-    ESP_ERROR_CHECK(waveshare_rgb_lcd_bl_on());
+    ESP_ERROR_CHECK(display_hal_backlight_on());
     
     // The screen sometimes breaks up on the very first frame.
     // The user noted it is "ok once it redraws".

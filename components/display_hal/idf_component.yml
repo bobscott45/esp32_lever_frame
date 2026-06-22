@@ -1,0 +1,5 @@
+version: "1.0.0"
+dependencies:
+  idf:
+    version: '>=5.0.0'
+  bobscott45/waveshare_esp32_s3_touch_lcd_4_3: '*'
