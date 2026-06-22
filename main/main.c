@@ -86,9 +86,6 @@ static void info_overlay_close_immediate(void) {
     }
 }
 
-static void info_overlay_anim_ready_cb(lv_anim_t * a) {
-    info_overlay_close_immediate();
-}
 
 static void settings_global_lcc_cb(lv_event_t *e) {
     lv_obj_t *sw = lv_event_get_target(e);
@@ -110,18 +107,13 @@ static void settings_startup_cb(lv_event_t *e) {
 
 static void info_overlay_click_cb(lv_event_t * e) {
     if (info_overlay) {
-        lv_anim_t a;
-        lv_anim_init(&a);
-        lv_anim_set_var(&a, info_overlay);
-        lv_anim_set_values(&a, 0, -lv_obj_get_height(info_overlay));
-        lv_anim_set_time(&a, 300);
-        lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_obj_set_y);
-        lv_anim_set_path_cb(&a, lv_anim_path_ease_in);
-        lv_anim_set_ready_cb(&a, info_overlay_anim_ready_cb);
-        lv_anim_start(&a);
+        info_overlay_close_immediate();
         
-        lv_obj_remove_flag(info_overlay, LV_OBJ_FLAG_CLICKABLE);
-        if (info_dimmer) lv_obj_remove_flag(info_dimmer, LV_OBJ_FLAG_CLICKABLE);
+        if (info_dimmer) {
+            lv_obj_remove_flag(info_dimmer, LV_OBJ_FLAG_CLICKABLE);
+            lv_obj_del(info_dimmer);
+            info_dimmer = NULL;
+        }
     }
 }
 
@@ -274,19 +266,6 @@ static void ui_show_info_overlay(void) {
     lv_obj_add_flag(info_overlay, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_add_event_cb(info_overlay, info_overlay_click_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_add_event_cb(info_overlay, info_overlay_click_cb, LV_EVENT_GESTURE, NULL);
-    
-    // Slide down animation
-    lv_anim_t a;
-    lv_anim_init(&a);
-    lv_anim_set_var(&a, info_overlay);
-    lv_obj_update_layout(info_overlay);
-    lv_coord_t h = lv_obj_get_height(info_overlay);
-    lv_obj_set_y(info_overlay, -h);
-    lv_anim_set_values(&a, -h, 0);
-    lv_anim_set_time(&a, 300);
-    lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_obj_set_y);
-    lv_anim_set_path_cb(&a, lv_anim_path_ease_out);
-    lv_anim_start(&a);
 }
 
 static void screen_gesture_cb(lv_event_t * e) {
