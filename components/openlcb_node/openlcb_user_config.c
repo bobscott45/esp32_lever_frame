@@ -61,8 +61,8 @@ const node_parameters_t openlcb_user_config_node_parameters = {
     .snip.mfg_version = 4,
     .snip.name = "Robert Scott",
     .snip.model = "ESP32 LCC Lever Frame",
-    .snip.hardware_version = "1.2.0",
-    .snip.software_version = "1.2.0",
+    .snip.hardware_version = "1.3.0",
+    .snip.software_version = "1.3.0",
     .snip.user_version = 2,
 
 

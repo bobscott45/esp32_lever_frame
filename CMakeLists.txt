@@ -11,4 +11,4 @@ function(message)
     _message(${ARGV}) # Pass everything else
 endfunction()
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
-project(esp32-lever-frame VERSION 1.2.0)
+project(esp32-lever-frame VERSION 1.3.0)

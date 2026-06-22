@@ -26,15 +26,15 @@ echo "🚀 Bumping version to $NEW_VERSION..."
 sed -i -E "s/(project\([^ ]+ VERSION )[0-9]+\.[0-9]+\.[0-9]+(\))/\1$NEW_VERSION\2/" CMakeLists.txt
 echo "✅ Updated CMakeLists.txt"
 
-# 2. Update main/openlcb_user_config.c
-sed -i -E "s/(\.snip\.hardware_version = \")[^\"]+(\",)/\1$NEW_VERSION\2/" main/openlcb_user_config.c
-sed -i -E "s/(\.snip\.software_version = \")[^\"]+(\",)/\1$NEW_VERSION\2/" main/openlcb_user_config.c
-echo "✅ Updated main/openlcb_user_config.c"
+# 2. Update components/openlcb_node/openlcb_user_config.c
+sed -i -E "s/(\.snip\.hardware_version = \")[^\"]+(\",)/\1$NEW_VERSION\2/" components/openlcb_node/openlcb_user_config.c
+sed -i -E "s/(\.snip\.software_version = \")[^\"]+(\",)/\1$NEW_VERSION\2/" components/openlcb_node/openlcb_user_config.c
+echo "✅ Updated components/openlcb_node/openlcb_user_config.c"
 
-# 3. Update main/cdi_array.h
-sed -i -E "s/(<hardwareVersion>)[^<]+(<\/hardwareVersion>)/\1$NEW_VERSION\2/" main/cdi_array.h
-sed -i -E "s/(<softwareVersion>)[^<]+(<\/softwareVersion>)/\1$NEW_VERSION\2/" main/cdi_array.h
-echo "✅ Updated main/cdi_array.h"
+# 3. Update components/openlcb_node/cdi_array.h
+sed -i -E "s/(<hardwareVersion>)[^<]+(<\/hardwareVersion>)/\1$NEW_VERSION\2/" components/openlcb_node/cdi_array.h
+sed -i -E "s/(<softwareVersion>)[^<]+(<\/softwareVersion>)/\1$NEW_VERSION\2/" components/openlcb_node/cdi_array.h
+echo "✅ Updated components/openlcb_node/cdi_array.h"
 
 # 4. Update CHANGELOG.md
 CHANGELOG_DATE=$(date +%Y-%m-%d)

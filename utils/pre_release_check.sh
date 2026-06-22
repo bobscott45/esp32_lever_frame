@@ -18,16 +18,16 @@ fi
 
 echo "Expected Version (from CHANGELOG.md): $CHANGELOG_VERSION"
 
-# Extract versions from main/openlcb_user_config.c
-CONFIG_HW_VERSION=$(grep "\.snip\.hardware_version" main/openlcb_user_config.c | sed -E 's/.*"([^"]+)".*/\1/')
-CONFIG_SW_VERSION=$(grep "\.snip\.software_version" main/openlcb_user_config.c | sed -E 's/.*"([^"]+)".*/\1/')
+# Extract versions from components/openlcb_node/openlcb_user_config.c
+CONFIG_HW_VERSION=$(grep "\.snip\.hardware_version" components/openlcb_node/openlcb_user_config.c | sed -E 's/.*"([^"]+)".*/\1/')
+CONFIG_SW_VERSION=$(grep "\.snip\.software_version" components/openlcb_node/openlcb_user_config.c | sed -E 's/.*"([^"]+)".*/\1/')
 
 # Extract version from CMakeLists.txt
 CMAKE_VERSION=$(grep -E "^project\(.* VERSION .*\)" CMakeLists.txt | sed -E 's/.*VERSION ([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
 
-# Extract versions from main/cdi_array.h
-CDI_HW_VERSION=$(grep "<hardwareVersion>" main/cdi_array.h | sed -E 's/.*<hardwareVersion>([^<]+)<\/hardwareVersion>.*/\1/')
-CDI_SW_VERSION=$(grep "<softwareVersion>" main/cdi_array.h | sed -E 's/.*<softwareVersion>([^<]+)<\/softwareVersion>.*/\1/')
+# Extract versions from components/openlcb_node/cdi_array.h
+CDI_HW_VERSION=$(grep "<hardwareVersion>" components/openlcb_node/cdi_array.h | sed -E 's/.*<hardwareVersion>([^<]+)<\/hardwareVersion>.*/\1/')
+CDI_SW_VERSION=$(grep "<softwareVersion>" components/openlcb_node/cdi_array.h | sed -E 's/.*<softwareVersion>([^<]+)<\/softwareVersion>.*/\1/')
 
 MISMATCH=0
 
@@ -38,22 +38,22 @@ if [ "$CMAKE_VERSION" != "$CHANGELOG_VERSION" ]; then
 fi
 
 if [ "$CONFIG_HW_VERSION" != "$CHANGELOG_VERSION" ]; then
-    echo "❌ Mismatch in main/openlcb_user_config.c (hardware_version): found '$CONFIG_HW_VERSION'"
+    echo "❌ Mismatch in components/openlcb_node/openlcb_user_config.c (hardware_version): found '$CONFIG_HW_VERSION'"
     MISMATCH=1
 fi
 
 if [ "$CONFIG_SW_VERSION" != "$CHANGELOG_VERSION" ]; then
-    echo "❌ Mismatch in main/openlcb_user_config.c (software_version): found '$CONFIG_SW_VERSION'"
+    echo "❌ Mismatch in components/openlcb_node/openlcb_user_config.c (software_version): found '$CONFIG_SW_VERSION'"
     MISMATCH=1
 fi
 
 if [ "$CDI_HW_VERSION" != "$CHANGELOG_VERSION" ]; then
-    echo "❌ Mismatch in main/cdi_array.h (hardwareVersion): found '$CDI_HW_VERSION'"
+    echo "❌ Mismatch in components/openlcb_node/cdi_array.h (hardwareVersion): found '$CDI_HW_VERSION'"
     MISMATCH=1
 fi
 
 if [ "$CDI_SW_VERSION" != "$CHANGELOG_VERSION" ]; then
-    echo "❌ Mismatch in main/cdi_array.h (softwareVersion): found '$CDI_SW_VERSION'"
+    echo "❌ Mismatch in components/openlcb_node/cdi_array.h (softwareVersion): found '$CDI_SW_VERSION'"
     MISMATCH=1
 fi
 
