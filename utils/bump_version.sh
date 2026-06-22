@@ -57,4 +57,9 @@ else
 fi
 
 echo ""
+# 5. Update README.md
+sed -i -E "s/^(# ESP32 Lever Frame v)[0-9]+\.[0-9]+\.[0-9]+/\1$NEW_VERSION/" README.md
+echo "✅ Updated README.md"
+
+echo ""
 echo "🎉 Done! Project version is now $NEW_VERSION."

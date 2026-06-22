@@ -25,6 +25,9 @@ CONFIG_SW_VERSION=$(grep "\.snip\.software_version" components/openlcb_node/open
 # Extract version from CMakeLists.txt
 CMAKE_VERSION=$(grep -E "^project\(.* VERSION .*\)" CMakeLists.txt | sed -E 's/.*VERSION ([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
 
+# Extract version from README.md
+README_VERSION=$(grep -E "^# ESP32 Lever Frame v" README.md | sed -E 's/.*v([0-9]+\.[0-9]+\.[0-9]+).*/\1/')
+
 # Extract versions from components/openlcb_node/cdi_array.h
 CDI_HW_VERSION=$(grep "<hardwareVersion>" components/openlcb_node/cdi_array.h | sed -E 's/.*<hardwareVersion>([^<]+)<\/hardwareVersion>.*/\1/')
 CDI_SW_VERSION=$(grep "<softwareVersion>" components/openlcb_node/cdi_array.h | sed -E 's/.*<softwareVersion>([^<]+)<\/softwareVersion>.*/\1/')
@@ -34,6 +37,11 @@ MISMATCH=0
 # Perform checks
 if [ "$CMAKE_VERSION" != "$CHANGELOG_VERSION" ]; then
     echo "❌ Mismatch in CMakeLists.txt: found '$CMAKE_VERSION'"
+    MISMATCH=1
+fi
+
+if [ "$README_VERSION" != "$CHANGELOG_VERSION" ]; then
+    echo "❌ Mismatch in README.md: found '$README_VERSION'"
     MISMATCH=1
 fi
 
