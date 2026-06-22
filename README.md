@@ -88,6 +88,8 @@ From the Web UI, you can configure LCC events, import/export the JSON interlocki
 
 > **📖 Detailed User Guide:** For a comprehensive explanation of how to operate the touchscreen and use the web configuration interface, please see the [User Guide](docs/USER_GUIDE.md).
 
+> **🏗️ Architecture Document:** For an in-depth look at the internal software architecture, hardware abstraction, and instructions on porting to new physical displays, please see the [Architecture Document](docs/ARCHITECTURE.md).
+
 ## Example Configuration
 
 A prototypical demonstration configuration is included in `docs/json/prototypical_interlocking.json`. This layout demonstrates sequential signaling, mutually locking facing points, and conditional 'OR' route locking.
