@@ -79,10 +79,39 @@ void test_controller_out_of_bounds(void) {
     TEST_ASSERT_FALSE(controller_get_lever_state(0, 2));
 }
 
+void test_controller_request_move(void) {
+    // We must initialize the actual config manager because controller_request_lever_move 
+    // retrieves the config from it.
+    config_manager_init();
+    const lever_system_config_t *config = config_manager_get_current();
+    
+    controller_init(config);
+    
+    // The default config has no interlocking rules, so everything should be accepted.
+    // Try to move Tab 0, Lever 0 to THROWN (true)
+    bool accepted = controller_request_lever_move(0, 0, true);
+    TEST_ASSERT_TRUE(accepted);
+    TEST_ASSERT_TRUE(controller_get_lever_state(0, 0));
+    
+    // Try to move it back to NORMAL (false)
+    accepted = controller_request_lever_move(0, 0, false);
+    TEST_ASSERT_TRUE(accepted);
+    TEST_ASSERT_FALSE(controller_get_lever_state(0, 0));
+    
+    // Out of bounds should be rejected
+    TEST_ASSERT_FALSE(controller_request_lever_move(-1, 0, true));
+    TEST_ASSERT_FALSE(controller_request_lever_move(0, -1, true));
+    TEST_ASSERT_FALSE(controller_request_lever_move(99, 0, true));
+    TEST_ASSERT_FALSE(controller_request_lever_move(0, 99, true));
+    
+    config_manager_deinit();
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_controller_init_null_config);
     RUN_TEST(test_controller_init_valid_config);
     RUN_TEST(test_controller_out_of_bounds);
+    RUN_TEST(test_controller_request_move);
     return UNITY_END();
 }
