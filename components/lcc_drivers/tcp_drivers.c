@@ -15,6 +15,14 @@
  * along with esp32_lever_frame.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/**
+ * @file tcp_drivers.c
+ * @brief Hardware driver implementations for TCP/IP Drivers.
+ *
+ * @author Robert Scott
+ * @date 2026
+ */
+
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
 #include "freertos/task.h"
@@ -42,6 +50,16 @@ int active_tcp_socket = -1;
 
 
 
+/**
+ * @brief  Background task for the TCP server.
+ *
+ * Waits for the WiFi connection to be established, then binds to the standard
+ * OpenLCB GridConnect port (12021). Listens for incoming connections from
+ * clients (e.g., JMRI) and bridges GridConnect strings to physical CAN messages
+ * and the local OpenLCB node.
+ *
+ * @param[in]  pvParameters   Task parameters provided by FreeRTOS during creation.
+ */
 static void tcp_server_task(void *pvParameters) {
     ESP_LOGI("TCP_Server", "Waiting for WiFi connection before starting GridConnect server...");
     if (wifi_event_group) {

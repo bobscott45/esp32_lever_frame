@@ -16,6 +16,14 @@
  */
 
 
+/**
+ * @file i2c_drivers.c
+ * @brief Hardware driver implementations for I2C Drivers.
+ *
+ * @author Robert Scott
+ * @date 2026
+ */
+
 #include "esp_log.h"
 #include "i2c_drivers.h"
 #include <i2cdev.h>

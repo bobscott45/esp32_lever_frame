@@ -1,5 +1,47 @@
+/*
+ * This file is part of esp32_lever_frame.
+ *
+ * esp32_lever_frame is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * esp32_lever_frame is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with esp32_lever_frame.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/**
+ * @file      interlocking.c
+ * @brief     Implementation of interlocking.c
+ *
+ * @author    Robert Scott
+ * @date      2026
+ */
+
 #include "interlocking.h"
 
+/**
+ * @brief  Evaluate a single interlocking condition.
+ *
+ * This function checks whether a specific interlocking condition is met given the current
+ * state of all levers and the proposed state of a lever that is changing. It also handles
+ * alternative conditions if they are specified.
+ *
+ * @param[in]  cond                   The interlocking condition to evaluate.
+ * @param[in]  tab_def                The configuration rules for the current frame.
+ * @param[in]  lever_states           A boolean array representing the current state of all levers.
+ * @param[in]  changing_lever_idx     The index of the lever that is changing state.
+ * @param[in]  changing_lever_state   The proposed new state of the changing lever.
+ * 
+ * @return 
+ *   - true if the condition is met
+ *   - false if the condition is not met
+ */
 static bool evaluate_condition(const interlocking_condition_t *cond, const tab_def_t *tab_def, const bool *lever_states, int changing_lever_idx, bool changing_lever_state) {
     if (cond->target_lever_index < 0) return true;
     

@@ -15,6 +15,14 @@
  * along with esp32_lever_frame.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/**
+ * @file      cdi_array.h
+ * @brief     Definitions for cdi_array.h
+ *
+ * @author    Robert Scott
+ * @date      2026
+ */
+
 #ifndef CDI_ARRAY_H
 #define CDI_ARRAY_H
 
@@ -26,8 +34,8 @@ static const uint8_t _cdi_data[] = {
     "  <identification>\n"
     "    <manufacturer>Robert Scott</manufacturer>\n"
     "    <model>ESP32 LCC Lever Frame Node</model>\n"
-    "    <hardwareVersion>1.3.0</hardwareVersion>\n"
-    "    <softwareVersion>1.3.0</softwareVersion>\n"
+    "    <hardwareVersion>1.3.1</hardwareVersion>\n"
+    "    <softwareVersion>1.3.1</softwareVersion>\n"
     "  </identification>\n"
     "  <segment space=\"253\" origin=\"0\">\n"
     "    <group>\n"

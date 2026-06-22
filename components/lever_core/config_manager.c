@@ -15,6 +15,14 @@
  * along with esp32_lever_frame.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/**
+ * @file      config_manager.c
+ * @brief     Implementation of config_manager.c
+ *
+ * @author    Robert Scott
+ * @date      2026
+ */
+
 #include "config_manager.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -85,6 +93,17 @@ static lever_system_config_t active_dynamic_config = {0};
 static bool is_using_dynamic = false;
 static uint32_t active_config_hash = 0;
 
+/**
+ * @brief  Calculate a hash for a JSON string.
+ *
+ * Computes a 32-bit djb2 hash of the provided JSON configuration string, 
+ * which is used to quickly detect layout or configuration changes.
+ *
+ * @param[in]  str   The JSON string to hash.
+ * 
+ * @return 
+ *   - 32-bit hash value
+ */
 static uint32_t hash_json_string(const char *str) {
     uint32_t hash = 5381;
     int c;
@@ -124,6 +143,14 @@ lever_type_t str_to_lever_type(const char *str) {
     return LEVER_TYPE_SPARE;
 }
 
+/**
+ * @brief  Free dynamically allocated configuration structures.
+ *
+ * Recursively frees all heap-allocated memory associated with a dynamically 
+ * loaded configuration, including tabs, levers, strings, and Wi-Fi credentials.
+ *
+ * @param[in]  config   Pointer to the configuration structure to free.
+ */
 static void free_dynamic_config(lever_system_config_t *config) {
     if (!config || config->tab_count == 0) return;
     
@@ -155,6 +182,20 @@ static void free_dynamic_config(lever_system_config_t *config) {
     memset(config, 0, sizeof(lever_system_config_t));
 }
 
+/**
+ * @brief  Parse a JSON string into a configuration structure.
+ *
+ * Uses cJSON to parse the provided JSON string and populate the target 
+ * configuration structure with dynamically allocated strings and arrays.
+ *
+ * @param[in]  json_str     The raw JSON string to parse.
+ * @param[out] out_config   Pointer to the configuration structure to populate.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if parameters are invalid
+ *   - ESP_ERR_NO_MEM if memory allocation fails
+ */
 static esp_err_t parse_json_to_config(const char *json_str, lever_system_config_t *out_config) {
     cJSON *root = cJSON_Parse(json_str);
     if (!root) {
@@ -586,6 +627,22 @@ char *config_manager_get_json_str(void) {
     return json_str;
 }
 
+/**
+ * @brief  Update configuration using a cJSON callback.
+ *
+ * Retrieves the current configuration as a JSON string, parses it into a cJSON 
+ * tree, applies the provided callback function to modify the tree, and then 
+ * saves the updated JSON back to NVS.
+ *
+ * @param[in]  update_cb   Callback function to modify the cJSON tree.
+ * @param[in]  ctx         Context pointer passed to the callback.
+ * @param[in]  notify      Whether to trigger a configuration reload event.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if parameters are invalid
+ *   - ESP_ERR_NO_MEM if memory allocation fails
+ */
 static esp_err_t update_config_with_cjson(void (*update_cb)(cJSON *root, void *ctx), void *ctx, bool notify) {
     char *json_str = config_manager_get_json_str();
     if (!json_str) return ESP_ERR_NO_MEM;
@@ -610,6 +667,15 @@ struct global_bool_update_ctx {
     bool value;
 };
 
+/**
+ * @brief  cJSON callback to update a global boolean.
+ *
+ * Modifies the provided cJSON tree to update or add a global boolean value 
+ * using the key and value specified in the context structure.
+ *
+ * @param[in]  root   Pointer to the root of the cJSON tree.
+ * @param[in]  ctx    Context containing the key and boolean value.
+ */
 static void update_global_bool_cb(cJSON *root, void *ctx) {
     struct global_bool_update_ctx *c = ctx;
     cJSON *newitem = cJSON_CreateBool(c->value);
@@ -630,6 +696,15 @@ struct global_int_update_ctx {
     int value;
 };
 
+/**
+ * @brief  cJSON callback to update a global integer.
+ *
+ * Modifies the provided cJSON tree to update or add a global integer value 
+ * using the key and value specified in the context structure.
+ *
+ * @param[in]  root   Pointer to the root of the cJSON tree.
+ * @param[in]  ctx    Context containing the key and integer value.
+ */
 static void update_global_int_cb(cJSON *root, void *ctx) {
     struct global_int_update_ctx *c = ctx;
     cJSON *newitem = cJSON_CreateNumber(c->value);
@@ -652,6 +727,15 @@ struct lever_bool_update_ctx {
     bool value;
 };
 
+/**
+ * @brief  cJSON callback to update a lever boolean.
+ *
+ * Modifies the provided cJSON tree to update or add a boolean value for 
+ * a specific lever using the indices, key, and value specified in the context.
+ *
+ * @param[in]  root   Pointer to the root of the cJSON tree.
+ * @param[in]  ctx    Context containing indices, key, and boolean value.
+ */
 static void update_lever_bool_cb(cJSON *root, void *ctx) {
     struct lever_bool_update_ctx *c = ctx;
     cJSON *tabs = cJSON_GetObjectItem(root, "tabs");

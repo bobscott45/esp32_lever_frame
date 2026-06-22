@@ -1,3 +1,28 @@
+/*
+ * This file is part of esp32_lever_frame.
+ *
+ * esp32_lever_frame is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * esp32_lever_frame is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with esp32_lever_frame.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/**
+ * @file      mock_nvs.c
+ * @brief     Implementation of mock_nvs.c
+ *
+ * @author    Robert Scott
+ * @date      2026
+ */
+
 #include "nvs.h"
 #include "nvs_flash.h"
 #include <string.h>
@@ -8,6 +33,16 @@ static size_t mock_nvs_blob_len = 0;
 static char mock_nvs_blob_key[64] = {0};
 
 // Expose these for testing
+/**
+ * @brief  Inject a blob into mock NVS.
+ *
+ * Prepares the mock NVS to return a specific binary blob when queried 
+ * for a specific key.
+ *
+ * @param[in]  key    Key of the blob.
+ * @param[in]  data   Pointer to the blob data.
+ * @param[in]  len    Length of the blob data.
+ */
 void mock_nvs_inject_blob(const char* key, const void* data, size_t len) {
     if (mock_nvs_blob_data) {
         free(mock_nvs_blob_data);
@@ -20,6 +55,11 @@ void mock_nvs_inject_blob(const char* key, const void* data, size_t len) {
     }
 }
 
+/**
+ * @brief  Clear mock NVS.
+ *
+ * Resets the mock NVS state, freeing any injected blob data.
+ */
 void mock_nvs_clear(void) {
     if (mock_nvs_blob_data) {
         free(mock_nvs_blob_data);

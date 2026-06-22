@@ -15,6 +15,14 @@
  * along with esp32_lever_frame.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/**
+ * @file      openlcb_integration.c
+ * @brief     Implementation of openlcb_integration.c
+ *
+ * @author    Robert Scott
+ * @date      2026
+ */
+
 #include "openlcb_integration.h"
 #include "openlcb_user_config.h"
 #include "openlcb/openlcb_config.h"
@@ -38,6 +46,18 @@ openlcb_node_t *local_node = NULL;
 
 void openlcb_integration_update_levers_by_event(event_id_t event_id);
 
+/**
+ * @brief  Callback for a consumed PCER event.
+ *
+ * Invoked by the OpenLCB stack when a Producer-Consumer Event Report (PCER) 
+ * is received for an event ID that this node is registered to consume. 
+ * Triggers lever updates corresponding to the received event.
+ *
+ * @param[in]  openlcb_node   Pointer to the local OpenLCB node.
+ * @param[in]  index          Index of the consumer that matched.
+ * @param[in]  event_id       Pointer to the received 64-bit event ID.
+ * @param[in]  payload        Pointer to the event payload data, if any.
+ */
 static void on_consumed_event_pcer(openlcb_node_t *openlcb_node, uint16_t index, event_id_t *event_id, event_payload_t *payload) {
     ESP_LOGI(TAG, "Consumed Event Received! EventID: 0x%016llX", (unsigned long long)*event_id);
     openlcb_integration_update_levers_by_event(*event_id);
@@ -61,6 +81,15 @@ static const can_config_t local_can_config = {
 };
 #endif
 
+/**
+ * @brief  FreeRTOS task for running the OpenLCB state machine.
+ *
+ * Continuously calls the OpenLCB run function to process incoming messages 
+ * and execute state machines. Also triggers the 100ms OpenLCB timer tick 
+ * every 10 iterations.
+ *
+ * @param[in]  pvParameters   Task parameters provided during creation.
+ */
 static void openlcb_task(void *pvParameters) {
     int ticks = 0;
     while(1) {

@@ -15,10 +15,26 @@
  * along with esp32_lever_frame.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/**
+ * @file      lever_frame.c
+ * @brief     Implementation of lever_frame.c
+ *
+ * @author    Robert Scott
+ * @date      2026
+ */
+
 #include "lever_frame.h"
 #include "config_manager.h"
 #include "controller.h"
 
+/**
+ * @brief  Callback for tab view change events.
+ *
+ * Handles the event triggered when the active tab is changed by the user,
+ * updating the controller's active tab state and auto-saving the configuration.
+ *
+ * @param[in]  e  The tab view value changed event object.
+ */
 static void tabview_changed_cb(lv_event_t *e) {
     lv_obj_t *tv = lv_event_get_target(e);
     uint16_t act = lv_tabview_get_tab_act(tv);

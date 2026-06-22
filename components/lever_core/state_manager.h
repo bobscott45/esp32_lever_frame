@@ -15,6 +15,14 @@
  * along with esp32_lever_frame.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/**
+ * @file      state_manager.h
+ * @brief     Definitions for state_manager.h
+ *
+ * @author    Robert Scott
+ * @date      2026
+ */
+
 #ifndef STATE_MANAGER_H
 #define STATE_MANAGER_H
 
@@ -22,14 +30,24 @@
 #include "config_manager.h"
 
 /**
- * @brief Load state from NVS. If the current_config_hash matches the saved hash, apply the states to the UI.
- * @param current_config_hash The hash of the active configuration
+ * @brief  Load state from NVS and apply it.
+ *
+ * This function loads the previously saved lever states from Non-Volatile Storage (NVS).
+ * If the current configuration hash matches the saved hash, it applies those states 
+ * to the user interface, restoring the system to its last known state.
+ *
+ * @param[in]  current_config_hash   The hash of the active configuration.
  */
 void state_manager_load_and_apply(uint32_t current_config_hash);
 
 /**
- * @brief Save the current states from the controller to NVS along with the config hash.
- * @param current_config_hash The hash of the active configuration
+ * @brief  Save current states to NVS.
+ *
+ * This function saves the current states of all levers from the controller 
+ * into Non-Volatile Storage (NVS). It also saves the configuration hash so that
+ * on next boot the states can be verified against the active configuration.
+ *
+ * @param[in]  current_config_hash   The hash of the active configuration.
  */
 void state_manager_save(uint32_t current_config_hash);
 

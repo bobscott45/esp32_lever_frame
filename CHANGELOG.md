@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-06-22
+
+### Changed
+- Standardized file and function level documentation across the entire project using Doxygen.
+- Applied consistent GPLv3 license headers to all source files.
+- Refactored `main.c` by extracting UI layout and overlay rendering logic into a dedicated `ui_overlays` component, improving separation of concerns.
+- Cleaned up overly wordy, chatty, and sequenced inline comments.
+
+### Fixed
+- Fixed the native CMake unit test harness (`run_config_tests` and `run_controller_tests`) which broke when the project migrated to standard ESP events in v1.3.0 by providing a mocked `esp_event.h`.
+
 ## [1.3.0] - 2026-06-22
 
 ### Added

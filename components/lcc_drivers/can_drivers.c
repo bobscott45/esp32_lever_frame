@@ -15,12 +15,16 @@
  * along with esp32_lever_frame.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-    /**
-     * @file openlcb_can_drivers.c
-     * @brief Hardware driver implementations for CAN Drivers.
-     *        Connect OpenLcbCLib to your CAN controller, timers, and
-     *        platform resources.
-     */
+/**
+ * @file can_drivers.c
+ * @brief Hardware driver implementations for CAN Drivers.
+ *
+ * Connect OpenLcbCLib to your CAN controller, timers, and
+ * platform resources.
+ *
+ * @author Robert Scott
+ * @date 2026
+ */
 
     #include <string.h>
     #include "can_drivers.h"
@@ -44,7 +48,16 @@
     extern int active_tcp_socket;
 
     // Background task to receive incoming physical CAN frames
-    static void can_rx_task(void *pvParameters) {
+/**
+ * @brief  Background task to receive incoming physical CAN frames.
+ *
+ * Continuously polls the TWAI hardware driver for incoming CAN messages.
+ * When a valid message is received, it is forwarded to the local OpenLCB stack
+ * and bridged to the TCP client if one is connected.
+ *
+ * @param[in]  pvParameters   Task parameters provided by FreeRTOS during creation.
+ */
+static void can_rx_task(void *pvParameters) {
         can_msg_t can_msg;
         can_msg.state.allocated = 1;
 

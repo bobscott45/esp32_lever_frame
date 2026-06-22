@@ -1,23 +1,69 @@
+/*
+ * This file is part of esp32_lever_frame.
+ *
+ * esp32_lever_frame is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * esp32_lever_frame is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with esp32_lever_frame.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/**
+ * @file      test_controller.c
+ * @brief     Implementation of test_controller.c
+ *
+ * @author    Robert Scott
+ * @date      2026
+ */
+
 #include "unity.h"
 #include "controller.h"
 #include <string.h>
 #include <stdlib.h>
 
+/**
+ * @brief  Set up test environment.
+ *
+ * Cleans the controller state before a test begins.
+ */
 void setUp(void) {
     // controller_free is safely called inside init, but let's be sure
     controller_free();
 }
 
+/**
+ * @brief  Tear down test environment.
+ *
+ * Cleans the controller state after a test finishes.
+ */
 void tearDown(void) {
     controller_free();
 }
 
+/**
+ * @brief  Test controller initialization with a NULL config.
+ *
+ * Verifies that the controller handles a NULL configuration safely without crashing.
+ */
 void test_controller_init_null_config(void) {
     controller_init(NULL);
     TEST_ASSERT_NULL(controller_get_tab_states(0));
     TEST_ASSERT_FALSE(controller_get_lever_state(0, 0));
 }
 
+/**
+ * @brief  Test controller initialization with a valid config.
+ *
+ * Verifies that the controller correctly sets up tab states and handles 
+ * lever state requests.
+ */
 void test_controller_init_valid_config(void) {
     lever_system_config_t config;
     memset(&config, 0, sizeof(config));
@@ -53,6 +99,11 @@ void test_controller_init_valid_config(void) {
     TEST_ASSERT_TRUE(controller_get_lever_state(1, 4));
 }
 
+/**
+ * @brief  Test controller out of bounds access.
+ *
+ * Verifies that the controller gracefully rejects invalid tab or lever indices.
+ */
 void test_controller_out_of_bounds(void) {
     lever_system_config_t config;
     memset(&config, 0, sizeof(config));
@@ -80,6 +131,12 @@ void test_controller_out_of_bounds(void) {
     TEST_ASSERT_FALSE(controller_get_lever_state(0, 2));
 }
 
+/**
+ * @brief  Test controller request move logic.
+ *
+ * Verifies that the controller allows valid moves based on the interlocking config
+ * and correctly rejects out-of-bounds requests.
+ */
 void test_controller_request_move(void) {
     // We must initialize the actual config manager because controller_request_lever_move 
     // retrieves the config from it.
@@ -108,6 +165,12 @@ void test_controller_request_move(void) {
     config_manager_deinit();
 }
 
+/**
+ * @brief  Test controller state serialization.
+ *
+ * Verifies that the entire controller state can be serialized to a blob 
+ * and subsequently restored perfectly.
+ */
 void test_controller_state_serialization(void) {
     lever_system_config_t config;
     memset(&config, 0, sizeof(config));
@@ -154,6 +217,16 @@ void test_controller_state_serialization(void) {
     free(blob);
 }
 
+/**
+ * @brief  Main entry point for tests.
+ *
+ * Runs the test suite using Unity.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if parameters are invalid
+ *   - ESP_FAIL on general failure
+ */
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_controller_init_null_config);

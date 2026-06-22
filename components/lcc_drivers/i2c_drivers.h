@@ -17,10 +17,24 @@
 
 
 
+/**
+ * @file i2c_drivers.h
+ * @brief Hardware driver prototypes for I2C Drivers.
+ *
+ * @author Robert Scott
+ * @date 2026
+ */
+
 #ifndef LCC_NODE_2_OPENLCB_I2C_DRIVERS_H
 #define LCC_NODE_2_OPENLCB_I2C_DRIVERS_H
 #include "i2cdev.h"
 
+/**
+ * @brief  Initializes the I2C bus manager.
+ *
+ * Calls the internal i2cdev initialization routine to set up the master I2C
+ * driver structure and bus configuration for communication with connected peripherals.
+ */
 void init_i2c_bus(void);
 
 #endif //LCC_NODE_2_OPENLCB_I2C_DRIVERS_H

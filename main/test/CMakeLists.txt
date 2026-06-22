@@ -26,6 +26,7 @@ add_executable(run_config_tests
     test_config.c
     ../../components/lever_core/config_manager.c
     ../../components/lever_core/interlocking.c
+    ../../components/lever_core/system_events.c
     mocks/mock_nvs.c
     ${CJSON_DIR}/cJSON.c
 )
@@ -38,6 +39,7 @@ add_executable(run_controller_tests
     ../../components/lever_core/controller.c
     ../../components/lever_core/config_manager.c
     ../../components/lever_core/interlocking.c
+    ../../components/lever_core/system_events.c
     mocks/mock_nvs.c
     ${CJSON_DIR}/cJSON.c
 )

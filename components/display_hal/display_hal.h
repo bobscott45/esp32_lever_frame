@@ -1,3 +1,28 @@
+/*
+ * This file is part of esp32_lever_frame.
+ *
+ * esp32_lever_frame is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * esp32_lever_frame is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with esp32_lever_frame.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/**
+ * @file      display_hal.h
+ * @brief     Definitions for display_hal.h
+ *
+ * @author    Robert Scott
+ * @date      2026
+ */
+
 #ifndef DISPLAY_HAL_H
 #define DISPLAY_HAL_H
 
@@ -10,25 +35,44 @@ extern "C" {
 #endif
 
 /**
- * @brief Initialize the hardware display and touch controller.
+ * @brief  Initialize the hardware display and touch controller.
  *
- * @param[out] panel_handle Pointer to store the panel handle
- * @param[out] touch_handle Pointer to store the touch handle
- * @return esp_err_t ESP_OK on success
+ * This function initializes the LCD panel and touch controller hardware using the
+ * underlying Waveshare BSP. It must be called before any UI operations are performed.
+ *
+ * @param[out] panel_handle   Pointer to store the resulting panel handle.
+ * @param[out] touch_handle   Pointer to store the resulting touch handle.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if parameters are invalid
+ *   - ESP_FAIL on general failure
  */
 esp_err_t display_hal_init(esp_lcd_panel_handle_t *panel_handle, esp_lcd_touch_handle_t *touch_handle);
 
 /**
- * @brief Turn the display backlight on.
+ * @brief  Turn the display backlight on.
  *
- * @return esp_err_t ESP_OK on success
+ * This function powers on the backlight for the hardware display. It is typically 
+ * used to wake up the screen after a sleep or idle period.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if parameters are invalid
+ *   - ESP_FAIL on general failure
  */
 esp_err_t display_hal_backlight_on(void);
 
 /**
- * @brief Turn the display backlight off.
+ * @brief  Turn the display backlight off.
  *
- * @return esp_err_t ESP_OK on success
+ * This function powers off the backlight for the hardware display. It is useful 
+ * for saving power when the display is not actively being viewed.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if parameters are invalid
+ *   - ESP_FAIL on general failure
  */
 esp_err_t display_hal_backlight_off(void);
 

@@ -1,4 +1,4 @@
-# ESP32 Lever Frame v1.3.0
+# ESP32 Lever Frame v1.3.1
 
 An ESP32-based application specifically designed for the **Waveshare ESP32-S3-Touch-LCD-4.3** device to control and manage a wireless virtual lever frame. This project features full OpenLCB / LCC (Layout Command Control) integration over Wi-Fi, allowing for two-way event parsing and dynamic lever state updates, making it ideal for model railway control systems.
 

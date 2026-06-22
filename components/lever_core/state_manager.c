@@ -15,6 +15,14 @@
  * along with esp32_lever_frame.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/**
+ * @file      state_manager.c
+ * @brief     Implementation of state_manager.c
+ *
+ * @author    Robert Scott
+ * @date      2026
+ */
+
 #include "state_manager.h"
 #include "nvs.h"
 #include "esp_log.h"

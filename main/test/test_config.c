@@ -1,3 +1,28 @@
+/*
+ * This file is part of esp32_lever_frame.
+ *
+ * esp32_lever_frame is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * esp32_lever_frame is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with esp32_lever_frame.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/**
+ * @file      test_config.c
+ * @brief     Implementation of test_config.c
+ *
+ * @author    Robert Scott
+ * @date      2026
+ */
+
 #include "unity.h"
 #include "config_manager.h"
 #include "cJSON.h"
@@ -8,15 +33,31 @@
 void mock_nvs_inject_blob(const char* key, const void* data, size_t len);
 void mock_nvs_clear(void);
 
+/**
+ * @brief  Set up test environment.
+ *
+ * Prepares the mock NVS environment before a test runs.
+ */
 void setUp(void) {
     mock_nvs_clear();
 }
 
+/**
+ * @brief  Tear down test environment.
+ *
+ * Cleans up the configuration manager and mock NVS after a test finishes.
+ */
 void tearDown(void) {
     config_manager_deinit();
     mock_nvs_clear();
 }
 
+/**
+ * @brief  Test configuration default fallback.
+ *
+ * Tests that the configuration manager falls back to the default configuration 
+ * when the NVS is empty.
+ */
 void test_config_default_fallback(void)
 {
     // Ensure NVS is empty
@@ -32,6 +73,12 @@ void test_config_default_fallback(void)
     TEST_ASSERT_EQUAL(8, cfg->tabs[0].lever_count);
 }
 
+/**
+ * @brief  Test configuration save and load.
+ *
+ * Tests that a configuration can be correctly serialized to JSON, saved to NVS, 
+ * and subsequently loaded and parsed back.
+ */
 void test_config_save_and_load(void)
 {
     // 1. Initialise with defaults
@@ -70,6 +117,16 @@ void test_config_save_and_load(void)
     free(json2);
 }
 
+/**
+ * @brief  Main entry point for tests.
+ *
+ * Runs the test suite using Unity.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if parameters are invalid
+ *   - ESP_FAIL on general failure
+ */
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_config_default_fallback);

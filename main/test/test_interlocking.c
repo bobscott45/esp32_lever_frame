@@ -1,15 +1,56 @@
+/*
+ * This file is part of esp32_lever_frame.
+ *
+ * esp32_lever_frame is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * esp32_lever_frame is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with esp32_lever_frame.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/**
+ * @file      test_interlocking.c
+ * @brief     Implementation of test_interlocking.c
+ *
+ * @author    Robert Scott
+ * @date      2026
+ */
+
 #include "unity.h"
 #include "interlocking.h"
 #include <string.h>
 
+/**
+ * @brief  Set up test environment.
+ *
+ * Prepares the interlocking test suite.
+ */
 void setUp(void) {
     // set stuff up here
 }
 
+/**
+ * @brief  Tear down test environment.
+ *
+ * Cleans up the interlocking test suite.
+ */
 void tearDown(void) {
     // clean stuff up here
 }
 
+/**
+ * @brief  Test simple interlocking rules.
+ *
+ * Verifies that a lever correctly blocks or allows a move based on a single 
+ * interlocking condition on another lever.
+ */
 void test_interlocking_simple_lock(void)
 {
     // Configure Lever 0 (locks Lever 1 Normal)
@@ -53,6 +94,12 @@ void test_interlocking_simple_lock(void)
     TEST_ASSERT_TRUE(can_return_0);
 }
 
+/**
+ * @brief  Test interlocking otherwise logic.
+ *
+ * Verifies that an interlocking condition with an alternative (otherwise) 
+ * target evaluates correctly when the primary condition fails but the alt succeeds.
+ */
 void test_interlocking_otherwise_logic(void)
 {
     // Lever 0 locks Lever 1 Normal o/w Lever 2 is Reversed
@@ -94,6 +141,12 @@ void test_interlocking_otherwise_logic(void)
     TEST_ASSERT_TRUE(can_throw_0_pass);
 }
 
+/**
+ * @brief  Test reverse locking interlocking.
+ *
+ * Verifies that if Lever A is thrown and it locks Lever B Normal, then Lever B 
+ * cannot be thrown.
+ */
 void test_interlocking_reverse_locking(void)
 {
     // Lever 1 locks Lever 0 Normal. 
@@ -122,6 +175,12 @@ void test_interlocking_reverse_locking(void)
     TEST_ASSERT_FALSE(can_throw_0);
 }
 
+/**
+ * @brief  Test mutual locking interlocking.
+ *
+ * Verifies that two levers which lock each other Normal cannot both be thrown 
+ * at the same time.
+ */
 void test_interlocking_mutual_locking(void)
 {
     // Lever 0 locks Lever 1 Normal. Lever 1 locks Lever 0 Normal.
@@ -157,6 +216,12 @@ void test_interlocking_mutual_locking(void)
     TEST_ASSERT_FALSE(lever_evaluate_interlocking(&tab, states, 1, true));
 }
 
+/**
+ * @brief  Test multiple interlocking conditions.
+ *
+ * Verifies that multiple interlocking conditions applied to a single lever 
+ * all evaluate correctly before a throw is allowed.
+ */
 void test_interlocking_multiple_conditions(void)
 {
     // Lever 0 locks Lever 1 Normal AND Lever 2 Reversed
@@ -197,6 +262,16 @@ void test_interlocking_multiple_conditions(void)
     TEST_ASSERT_TRUE(lever_evaluate_interlocking(&tab, states3, 0, true));
 }
 
+/**
+ * @brief  Main entry point for tests.
+ *
+ * Runs the test suite using Unity.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if parameters are invalid
+ *   - ESP_FAIL on general failure
+ */
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_interlocking_simple_lock);

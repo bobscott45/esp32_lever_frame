@@ -15,6 +15,14 @@
  * along with esp32_lever_frame.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/**
+ * @file      lever.c
+ * @brief     Implementation of lever.c
+ *
+ * @author    Robert Scott
+ * @date      2026
+ */
+
 
 
 #include "lever.h"
@@ -25,8 +33,25 @@
 #include "config_manager.h"
 #include "controller.h"
 
+/**
+ * @brief  Updates the system lock UI for a specific lever switch.
+ *
+ * Evaluates the interlocking rules and manual lock state to determine whether
+ * the given lever switch should be interactable, visually updating the indicator
+ * and collar button accordingly.
+ *
+ * @param[in]  sw  The lever switch object to update.
+ */
 static void lever_update_system_lock_ui(lv_obj_t *sw);
 
+/**
+ * @brief  Callback for the LCC enabled switch toggle.
+ *
+ * Handles the event when the LCC enabled switch is toggled by the user, updating
+ * the corresponding configuration value in the config manager.
+ *
+ * @param[in]  ev  The event object containing the switch and user data.
+ */
 static void lcc_enabled_sw_cb(lv_event_t *ev) {
     lv_obj_t *sw = lv_event_get_target(ev);
     bool is_on = lv_obj_has_state(sw, LV_STATE_CHECKED);
@@ -34,6 +59,14 @@ static void lcc_enabled_sw_cb(lv_event_t *ev) {
     config_manager_update_lever_bool(indices[0], indices[1], "lcc_enabled", is_on);
 }
 
+/**
+ * @brief  Callback for the manual collar lock button.
+ *
+ * Processes the toggling of the manual lock collar button, updating the controller
+ * lock state and requesting a UI refresh for the associated lever system.
+ *
+ * @param[in]  e  The event object containing the button target.
+ */
 static void collar_btn_event_cb(lv_event_t * e) {
     lv_obj_t * btn = lv_event_get_target(e);
     lv_obj_t * wrapper = lv_obj_get_parent(btn);
@@ -57,6 +90,20 @@ static void collar_btn_event_cb(lv_event_t * e) {
 
 
 
+/**
+ * @brief  Checks the interlocking rules for a lever movement.
+ *
+ * Evaluates whether transitioning the lever to the specified target state is
+ * permitted under the current system configuration and states of other levers.
+ *
+ * @param[in]  sw                   The switch object attempting to move.
+ * @param[in]  target_state_thrown  Boolean indicating if the target state is thrown.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if parameters are invalid
+ *   - ESP_FAIL on general failure
+ */
 static bool interlocking_check(lv_obj_t *sw, bool target_state_thrown) {
     lv_obj_t *switch_group = lv_obj_get_parent(sw);
     lv_obj_t *container = lv_obj_get_parent(switch_group);
@@ -75,6 +122,15 @@ static bool interlocking_check(lv_obj_t *sw, bool target_state_thrown) {
     return lever_evaluate_interlocking(tab_def, lever_states, lever_index, target_state_thrown);
 }
 
+/**
+ * @brief  Updates the system lock UI for a specific lever switch.
+ *
+ * Evaluates the interlocking rules and manual lock state to determine whether
+ * the given lever switch should be interactable, visually updating the indicator
+ * and collar button accordingly.
+ *
+ * @param[in]  sw  The lever switch object to update.
+ */
 static void lever_update_system_lock_ui(lv_obj_t *sw) {
     if (!sw) return;
     
@@ -161,6 +217,14 @@ void lever_frame_update_system_locks(lv_obj_t *frame) {
     }
 }
 
+/**
+ * @brief  Refreshes the visual state of the lever switch labels.
+ *
+ * Updates the text color of the normal and thrown labels to highlight the
+ * active state based on whether the switch is currently thrown or not.
+ *
+ * @param[in]  e  The refresh event containing the switch target.
+ */
 static void lever_switch_refresh_cb(lv_event_t * e) {
     lv_obj_t * sw = lv_event_get_target(e);
     bool is_thrown = lv_obj_has_state(sw, LV_STATE_CHECKED);
@@ -177,6 +241,15 @@ static void lever_switch_refresh_cb(lv_event_t * e) {
     }
 }
 
+/**
+ * @brief  Handles the value changed event for a lever switch.
+ *
+ * Intercepts a lever toggle request, validates it against the controller's
+ * interlocking logic, and either accepts the move and updates system locks,
+ * or rejects it and reverts the visual state.
+ *
+ * @param[in]  e  The event object containing the switch target.
+ */
 static void lever_switch_event_cb(lv_event_t * e) {
     lever_switch_refresh_cb(e);
     
@@ -209,6 +282,19 @@ static void lever_switch_event_cb(lv_event_t * e) {
     lever_frame_update_system_locks(frame);
 }
 
+/**
+ * @brief  Creates the main container for a lever.
+ *
+ * Initializes the flexible column layout and styling that holds all visual
+ * components of a single lever, simulating a physical metal plate.
+ *
+ * @param[in]  parent  The parent object to attach the container to.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if parameters are invalid
+ *   - ESP_FAIL on general failure
+ */
 static lv_obj_t *container_create(lv_obj_t *parent) {
     lv_obj_t *obj = lv_obj_create(parent);
     lv_obj_set_width(obj, LEVER_CONTAINER_WIDTH);
@@ -234,6 +320,19 @@ static lv_obj_t *container_create(lv_obj_t *parent) {
     return obj;
 }
 
+/**
+ * @brief  Creates the header container for a lever.
+ *
+ * Groups the top label and the color indicator bar together within the lever's
+ * main container, maintaining proper alignment and spacing.
+ *
+ * @param[in]  parent  The parent container object.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if parameters are invalid
+ *   - ESP_FAIL on general failure
+ */
 static lv_obj_t *header_container_create(lv_obj_t *parent) {
     lv_obj_t *obj = lv_obj_create(parent);
     lv_obj_set_size(obj, lv_pct(100), LV_SIZE_CONTENT);
@@ -251,6 +350,19 @@ static lv_obj_t *header_container_create(lv_obj_t *parent) {
     return obj;
 }
 
+/**
+ * @brief  Creates the switch container for a lever.
+ *
+ * Houses the lever switch and its corresponding state labels, ensuring they
+ * stretch appropriately and align vertically within the lever assembly.
+ *
+ * @param[in]  parent  The parent container object.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if parameters are invalid
+ *   - ESP_FAIL on general failure
+ */
 static lv_obj_t *switch_container_create(lv_obj_t *parent) {
     lv_obj_t *obj = lv_obj_create(parent);
     lv_obj_set_width(obj, lv_pct(100));
@@ -285,6 +397,14 @@ void lever_close_all_drawers(void) {
     }
 }
 
+/**
+ * @brief  Handles click events to dismiss the lever info drawer.
+ *
+ * Detects clicks or gestures on the drawer or its background dimmer, and
+ * closes the drawer by deleting its associated UI objects.
+ *
+ * @param[in]  e  The click or gesture event object.
+ */
 static void lever_drawer_click_cb(lv_event_t * e) {
     if (lever_info_drawer) {
         lv_obj_del(lever_info_drawer);
@@ -296,6 +416,22 @@ static void lever_drawer_click_cb(lv_event_t * e) {
     }
 }
 
+/**
+ * @brief  Adds a key-value row to the lever info drawer.
+ *
+ * Creates a flexible row containing a customized key label and value label,
+ * used for displaying detailed configuration information about a lever.
+ *
+ * @param[in]  parent  The parent table or container object.
+ * @param[in]  key     The string representing the key label.
+ * @param[in]  val     The string representing the value label.
+ * @param[in]  color   The hex color code for the key text.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if parameters are invalid
+ *   - ESP_FAIL on general failure
+ */
 static lv_obj_t* ui_add_drawer_row(lv_obj_t *parent, const char *key, const char *val, uint32_t color) {
     lv_obj_t *row = lv_obj_create(parent);
     lv_obj_set_size(row, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
@@ -317,6 +453,14 @@ static lv_obj_t* ui_add_drawer_row(lv_obj_t *parent, const char *key, const char
     return row;
 }
 
+/**
+ * @brief  Handles click events on the lever's brass plate header.
+ *
+ * Opens an informational drawer displaying detailed settings and interlocking
+ * rules for the specific lever when its header area is interacted with.
+ *
+ * @param[in]  e  The click event containing the lever definition user data.
+ */
 static void brass_plate_click_cb(lv_event_t * e) {
     const lever_def_t *lever_def = lv_event_get_user_data(e);
     if (!lever_def || lever_info_drawer || lever_info_dimmer) return;
@@ -449,6 +593,21 @@ static void brass_plate_click_cb(lv_event_t * e) {
     lv_obj_add_event_cb(lever_info_drawer, lever_drawer_click_cb, LV_EVENT_GESTURE, NULL);
 }
 
+/**
+ * @brief  Creates the brass plate label for a lever.
+ *
+ * Generates a styled label mimicking an engraved brass plate, centering the
+ * provided text within a fixed-size container above the lever switch.
+ *
+ * @param[in]  parent        The parent header container.
+ * @param[in]  lever_def     Pointer to the lever's definition struct.
+ * @param[in]  label_height  The total height allocated for the label plate.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if parameters are invalid
+ *   - ESP_FAIL on general failure
+ */
 static lv_obj_t *lever_label_create(lv_obj_t *parent, const lever_def_t *lever_def, uint8_t label_height) {
     // Create the brass plate as a fixed-size container
     lv_obj_t *plate = lv_obj_create(parent);
@@ -476,6 +635,20 @@ static lv_obj_t *lever_label_create(lv_obj_t *parent, const lever_def_t *lever_d
     return plate;
 }
 
+/**
+ * @brief  Creates a static engraved text label.
+ *
+ * Generates a non-interactive text label styled to look like an engraving on
+ * the metal panel, typically used for the normal and thrown state indicators.
+ *
+ * @param[in]  parent  The parent switch container.
+ * @param[in]  text    The string to display in the label.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if parameters are invalid
+ *   - ESP_FAIL on general failure
+ */
 static lv_obj_t *static_label_create(lv_obj_t *parent, const char *text) {
     lv_obj_t *obj = lv_label_create(parent);
     
@@ -490,6 +663,20 @@ static lv_obj_t *static_label_create(lv_obj_t *parent, const char *text) {
     return obj;
 }
 
+/**
+ * @brief  Creates the visual lever switch component.
+ *
+ * Instantiates the actual switch object, applying custom styling to resemble
+ * a physical lever operating within a dark slot, color-coded by type.
+ *
+ * @param[in]  parent      The parent switch container.
+ * @param[in]  type_color  The hex color code assigned to the lever type.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if parameters are invalid
+ *   - ESP_FAIL on general failure
+ */
 static lv_obj_t *lever_switch_create(lv_obj_t *parent, uint32_t type_color) {
     lv_obj_t *obj = lv_switch_create(parent);
     lv_obj_set_style_anim_time(obj, 0, 0);
@@ -530,6 +717,20 @@ static lv_obj_t *lever_switch_create(lv_obj_t *parent, uint32_t type_color) {
     return obj;
 }
 
+/**
+ * @brief  Creates a colored identification bar for the lever.
+ *
+ * Adds a small rectangular color bar below the brass plate to quickly indicate
+ * the functional type of the lever to the operator.
+ *
+ * @param[in]  parent  The parent header container.
+ * @param[in]  color   The hex color code to fill the bar.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if parameters are invalid
+ *   - ESP_FAIL on general failure
+ */
 static lv_obj_t *color_bar_create(lv_obj_t *parent, uint32_t color) {
     lv_obj_t *obj = lv_obj_create(parent);
     lv_obj_set_size(obj, lv_pct(100), 16); // Fill available width

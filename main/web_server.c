@@ -15,6 +15,14 @@
  * along with esp32_lever_frame.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/**
+ * @file      web_server.c
+ * @brief     Implementation of web_server.c
+ *
+ * @author    Robert Scott
+ * @date      2026
+ */
+
 #include "web_server.h"
 #include <string.h>
 #include "esp_wifi.h"
@@ -29,6 +37,14 @@
 
 static TimerHandle_t wifi_retry_timer = NULL;
 
+/**
+ * @brief  Callback for Wi-Fi retry timer.
+ *
+ * This function is triggered when the Wi-Fi retry timer expires, 
+ * attempting to reconnect the Wi-Fi interface.
+ *
+ * @param[in]  xTimer   Handle of the expired timer.
+ */
 static void wifi_retry_timer_cb(TimerHandle_t xTimer) {
     ESP_LOGI("WebServer", "Retrying WiFi connection...");
     esp_wifi_connect();
@@ -41,6 +57,17 @@ static esp_netif_t *sta_netif = NULL;
 EventGroupHandle_t wifi_event_group;
 #define WIFI_CONNECTED_BIT BIT0
 
+/**
+ * @brief  Handle Wi-Fi and IP events.
+ *
+ * This function processes system events related to Wi-Fi connection state 
+ * and IP address assignment, including initiating connection retries.
+ *
+ * @param[in]  arg          User argument.
+ * @param[in]  event_base   Event base.
+ * @param[in]  event_id     Event ID.
+ * @param[in]  event_data   Event data.
+ */
 static void wifi_event_handler(void* arg, esp_event_base_t event_base,
                           int32_t event_id, void* event_data) {
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
@@ -84,8 +111,21 @@ void web_server_get_sta_ip(char *ip_buf, size_t buf_len) {
 extern const uint8_t index_html_start[] asm("_binary_index_html_gz_start");
 extern const uint8_t index_html_end[] asm("_binary_index_html_gz_end");
 
-extern void ui_show_remote_config_overlay(void);
+#include "ui_overlays.h"
 
+/**
+ * @brief  Handler for the root /index.html path.
+ *
+ * Serves the embedded gzip-compressed index.html file and shows 
+ * the remote configuration overlay on the UI.
+ *
+ * @param[in]  req   HTTP request pointer.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if parameters are invalid
+ *   - ESP_FAIL on general failure
+ */
 static esp_err_t root_get_handler(httpd_req_t *req) {
     ESP_LOGI(TAG, "Serving /index.html (gzipped)");
     ui_show_remote_config_overlay();
@@ -97,6 +137,19 @@ static esp_err_t root_get_handler(httpd_req_t *req) {
     return ESP_OK;
 }
 
+/**
+ * @brief  Handler for getting the configuration via API.
+ *
+ * Returns the current configuration as a JSON string and updates 
+ * the UI overlay.
+ *
+ * @param[in]  req   HTTP request pointer.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if parameters are invalid
+ *   - ESP_FAIL on general failure
+ */
 static esp_err_t api_config_get_handler(httpd_req_t *req) {
     ESP_LOGI(TAG, "GET /api/config");
     ui_show_remote_config_overlay();
@@ -113,6 +166,19 @@ static esp_err_t api_config_get_handler(httpd_req_t *req) {
     return ESP_OK;
 }
 
+/**
+ * @brief  Handler for the ping API.
+ *
+ * Responds with a simple status OK JSON string to indicate the 
+ * web server is alive.
+ *
+ * @param[in]  req   HTTP request pointer.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if parameters are invalid
+ *   - ESP_FAIL on general failure
+ */
 static esp_err_t api_ping_get_handler(httpd_req_t *req) {
     ui_show_remote_config_overlay();
     httpd_resp_set_type(req, "application/json");
@@ -121,6 +187,19 @@ static esp_err_t api_ping_get_handler(httpd_req_t *req) {
     return ESP_OK;
 }
 
+/**
+ * @brief  Handler for posting configuration updates via API.
+ *
+ * Reads the incoming JSON payload, saves it to the configuration manager, 
+ * and then schedules a device reboot on success.
+ *
+ * @param[in]  req   HTTP request pointer.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if parameters are invalid
+ *   - ESP_FAIL on general failure
+ */
 static esp_err_t api_config_post_handler(httpd_req_t *req) {
     ESP_LOGI(TAG, "POST /api/config");
     ui_show_remote_config_overlay();
@@ -211,6 +290,19 @@ static const httpd_uri_t api_ping_get_uri = {
     .user_ctx  = NULL
 };
 
+/**
+ * @brief  Handler for getting the status via API.
+ *
+ * Returns a JSON string containing AP IP, STA IP, Node ID, 
+ * and version information.
+ *
+ * @param[in]  req   HTTP request pointer.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_ERR_INVALID_ARG if parameters are invalid
+ *   - ESP_FAIL on general failure
+ */
 static esp_err_t api_status_handler(httpd_req_t *req) {
     httpd_resp_set_type(req, "application/json");
     
@@ -236,6 +328,14 @@ static const httpd_uri_t uri_api_status = {
     .user_ctx  = NULL
 };
 
+/**
+ * @brief  Start the internal HTTP web server.
+ *
+ * Configures the HTTP server parameters, registers the URI handlers, 
+ * and starts the server.
+ * 
+ * @return httpd_handle_t Handle to the running server or NULL on failure.
+ */
 static httpd_handle_t start_webserver(void) {
     httpd_handle_t server_handle = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();

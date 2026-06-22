@@ -15,6 +15,14 @@
  * along with esp32_lever_frame.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/**
+ * @file      openlcb_user_config.c
+ * @brief     Implementation of openlcb_user_config.c
+ *
+ * @author    Robert Scott
+ * @date      2026
+ */
+
 /** \copyright
  * Copyright (c) 2024, Jim Kueneman
  * All rights reserved.
@@ -61,8 +69,8 @@ const node_parameters_t openlcb_user_config_node_parameters = {
     .snip.mfg_version = 4,
     .snip.name = "Robert Scott",
     .snip.model = "ESP32 LCC Lever Frame",
-    .snip.hardware_version = "1.3.0",
-    .snip.software_version = "1.3.0",
+    .snip.hardware_version = "1.3.1",
+    .snip.software_version = "1.3.1",
     .snip.user_version = 2,
 
 

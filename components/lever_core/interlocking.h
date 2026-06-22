@@ -1,3 +1,28 @@
+/*
+ * This file is part of esp32_lever_frame.
+ *
+ * esp32_lever_frame is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * esp32_lever_frame is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with esp32_lever_frame.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+/**
+ * @file      interlocking.h
+ * @brief     Definitions for interlocking.h
+ *
+ * @author    Robert Scott
+ * @date      2026
+ */
+
 #ifndef ESP32_LEVER_FRAME_INTERLOCKING_H
 #define ESP32_LEVER_FRAME_INTERLOCKING_H
 
@@ -59,19 +84,37 @@ typedef struct {
 } lever_system_config_t;
 
 /**
- * Evaluates if a given lever movement is allowed based on the rules and current lever states.
+ * @brief  Evaluate if a given lever movement is allowed.
+ *
  * This pure logic function is decoupled from LVGL graphics and can be unit tested.
+ * It checks the rules defined in the current frame configuration against the current 
+ * state of all levers to see if the requested state change is permitted by interlocking rules.
+ *
+ * @param[in]  tab_def               The configuration rules for the current frame.
+ * @param[in]  lever_states          A boolean array representing the current state of all levers.
+ * @param[in]  lever_index_to_move   The index of the lever being evaluated.
+ * @param[in]  target_state_thrown   The desired state of the lever (true for THROWN, false for NORMAL).
  * 
- * @param tab_def The configuration rules for the current frame
- * @param lever_states A boolean array representing the current state of all levers (true=THROWN, false=NORMAL)
- * @param lever_index_to_move The index of the lever being evaluated
- * @param target_state_thrown The desired state of the lever (true=THROWN, false=NORMAL)
- * @return true if the movement is permitted, false if blocked by interlocking
+ * @return 
+ *   - true if the movement is permitted
+ *   - false if blocked by interlocking
  */
 bool lever_evaluate_interlocking(const tab_def_t *tab_def, const bool *lever_states, int lever_index_to_move, bool target_state_thrown);
 
 /**
- * Checks if the current state of a specific lever is in violation of the interlocking rules.
+ * @brief  Check if the state of a specific lever violates interlocking rules.
+ *
+ * This function determines if the current state of a lever is in violation 
+ * of the interlocking rules by checking its own conditions and the conditions 
+ * of other thrown levers that depend on it.
+ *
+ * @param[in]  tab_def                The configuration rules for the current frame.
+ * @param[in]  lever_states           A boolean array representing the current state of all levers.
+ * @param[in]  lever_index_to_check   The index of the lever to check.
+ * 
+ * @return 
+ *   - true if the state is illegal
+ *   - false if the state is valid
  */
 bool lever_is_state_illegal(const tab_def_t *tab_def, const bool *lever_states, int lever_index_to_check);
 
