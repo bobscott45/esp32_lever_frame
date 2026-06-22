@@ -28,6 +28,7 @@
 #include "freertos/task.h"
 #include "state_manager.h"
 #include "config_manager.h"
+#include "interlocking.h"
 #include "bsp/lvgl_port.h"
 #include <string.h>
 
@@ -201,6 +202,18 @@ void openlcb_integration_update_levers_by_event(event_id_t event_id) {
         if (!tab_def) continue;
 
         uint32_t l_count = lv_obj_get_child_cnt(frame);
+        
+        bool *lever_states = malloc(sizeof(bool) * l_count);
+        if (lever_states) {
+            for (uint32_t i = 0; i < l_count; i++) {
+                lv_obj_t *other_wrapper = lv_obj_get_child(frame, i);
+                lv_obj_t *other_container = lv_obj_get_child(other_wrapper, 0);
+                lv_obj_t *other_switch_group = lv_obj_get_child(other_container, 1);
+                lv_obj_t *other_sw = lv_obj_get_child(other_switch_group, 1);
+                lever_states[i] = other_sw ? lv_obj_has_state(other_sw, LV_STATE_CHECKED) : false;
+            }
+        }
+
         for (uint32_t l = 0; l < l_count; l++) {
             lv_obj_t *l_wrapper = lv_obj_get_child(frame, l);
             if (!l_wrapper) continue;
@@ -218,8 +231,18 @@ void openlcb_integration_update_levers_by_event(event_id_t event_id) {
                     if (switch_group) {
                         lv_obj_t *sw = lv_obj_get_child(switch_group, 1);
                         if (sw && lv_obj_has_state(sw, LV_STATE_CHECKED)) {
-                            lv_obj_clear_state(sw, LV_STATE_CHECKED);
-                            lv_obj_send_event(sw, LV_EVENT_VALUE_CHANGED, NULL);
+                            bool allowed = true;
+                            const lever_system_config_t *sys_config = config_manager_get_current();
+                            if (sys_config && sys_config->conflict_policy == INTERLOCK_POLICY_STRICT_LOCAL && lever_states) {
+                                allowed = lever_evaluate_interlocking(tab_def, lever_states, l, false);
+                            }
+                            if (allowed) {
+                                lv_obj_clear_state(sw, LV_STATE_CHECKED);
+                                lv_obj_send_event(sw, LV_EVENT_VALUE_CHANGED, NULL);
+                                if (lever_states) lever_states[l] = false;
+                            } else {
+                                ESP_LOGI(TAG, "LCC normal event ignored due to strict local interlocking policy.");
+                            }
                         }
                     }
                 }
@@ -230,12 +253,26 @@ void openlcb_integration_update_levers_by_event(event_id_t event_id) {
                     if (switch_group) {
                         lv_obj_t *sw = lv_obj_get_child(switch_group, 1);
                         if (sw && !lv_obj_has_state(sw, LV_STATE_CHECKED)) {
-                            lv_obj_add_state(sw, LV_STATE_CHECKED);
-                            lv_obj_send_event(sw, LV_EVENT_VALUE_CHANGED, NULL);
+                            bool allowed = true;
+                            const lever_system_config_t *sys_config = config_manager_get_current();
+                            if (sys_config && sys_config->conflict_policy == INTERLOCK_POLICY_STRICT_LOCAL && lever_states) {
+                                allowed = lever_evaluate_interlocking(tab_def, lever_states, l, true);
+                            }
+                            if (allowed) {
+                                lv_obj_add_state(sw, LV_STATE_CHECKED);
+                                lv_obj_send_event(sw, LV_EVENT_VALUE_CHANGED, NULL);
+                                if (lever_states) lever_states[l] = true;
+                            } else {
+                                ESP_LOGI(TAG, "LCC reverse event ignored due to strict local interlocking policy.");
+                            }
                         }
                     }
                 }
             }
+        }
+        
+        if (lever_states) {
+            free(lever_states);
         }
     }
 

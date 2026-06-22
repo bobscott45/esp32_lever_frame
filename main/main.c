@@ -23,6 +23,7 @@
 #include "web_server.h"
 #include "esp_log.h"
 #include "openlcb_integration.h"
+#include "controller.h"
 #include <string.h>
 
 static const char *TAG = "main";
@@ -238,7 +239,7 @@ static void ui_show_info_overlay(void) {
 
     lv_obj_t *pol_dd = lv_dropdown_create(pol_row);
     lv_obj_set_width(pol_dd, 180);
-    lv_dropdown_set_options(pol_dd, "Strict Local\nOverride Allowed");
+    lv_dropdown_set_options(pol_dd, "Strict Local\nOverride Allowed\nAccept & Warn");
     lv_dropdown_set_selected(pol_dd, curr_config->conflict_policy);
     lv_obj_add_event_cb(pol_dd, settings_policy_cb, LV_EVENT_VALUE_CHANGED, NULL);
 
@@ -322,6 +323,9 @@ static void rebuild_ui_timer_cb(lv_timer_t *timer)
         // Step 2: Create new UI while screen is black
         ESP_LOGI(TAG, "Config update: Creating new UI");
         const lever_system_config_t *curr_config = config_manager_get_current();
+        
+        controller_init(curr_config);
+        
         system_tabview = lever_system_create(lv_scr_act(), curr_config);
         
         state = 2;
@@ -403,6 +407,9 @@ void app_main(void)
         lv_timer_set_repeat_count(rebuild_timer, -1);
         
         const lever_system_config_t *curr_config = config_manager_get_current();
+        
+        controller_init(curr_config);
+        
         system_tabview = lever_system_create(lv_scr_act(), curr_config);
         
         // Restore lever states if configuration matches

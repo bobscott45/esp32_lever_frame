@@ -24,8 +24,7 @@
 #include "state_manager.h"
 #include "config_manager.h"
 #include "openlcb_integration.h"
-
-
+#include "controller.h"
 
 static void lever_update_system_lock_ui(lv_obj_t *sw);
 
@@ -62,19 +61,15 @@ static bool interlocking_check(lv_obj_t *sw, bool target_state_thrown) {
     lv_obj_t *container = lv_obj_get_parent(switch_group);
     lv_obj_t *wrapper = lv_obj_get_parent(container);
     lv_obj_t *frame = lv_obj_get_parent(wrapper);
+    lv_obj_t *tab = lv_obj_get_parent(frame);
     
+    int tab_index = lv_obj_get_index(tab);
     int lever_index = lv_obj_get_index(wrapper);
     const tab_def_t *tab_def = (const tab_def_t *)lv_obj_get_user_data(frame);
     if (!tab_def) return true; // No config attached, allow movement
     
-    bool lever_states[tab_def->lever_count];
-    for (int i = 0; i < tab_def->lever_count; i++) {
-        lv_obj_t *other_wrapper = lv_obj_get_child(frame, i);
-        lv_obj_t *other_container = lv_obj_get_child(other_wrapper, 0);
-        lv_obj_t *other_switch_group = lv_obj_get_child(other_container, 1);
-        lv_obj_t *other_sw = lv_obj_get_child(other_switch_group, 1);
-        lever_states[i] = lv_obj_has_state(other_sw, LV_STATE_CHECKED);
-    }
+    const bool *lever_states = controller_get_tab_states(tab_index);
+    if (!lever_states) return true;
     
     return lever_evaluate_interlocking(tab_def, lever_states, lever_index, target_state_thrown);
 }
@@ -96,17 +91,13 @@ static void lever_update_system_lock_ui(lv_obj_t *sw) {
     
     bool current_illegal = false;
     lv_obj_t *frame = lv_obj_get_parent(wrapper);
+    lv_obj_t *tab = lv_obj_get_parent(frame);
+    int tab_index = lv_obj_get_index(tab);
     int lever_index = lv_obj_get_index(wrapper);
     const tab_def_t *tab_def = (const tab_def_t *)lv_obj_get_user_data(frame);
-    if (tab_def) {
-        bool lever_states[tab_def->lever_count];
-        for (int i = 0; i < tab_def->lever_count; i++) {
-            lv_obj_t *other_wrapper = lv_obj_get_child(frame, i);
-            lv_obj_t *other_container = lv_obj_get_child(other_wrapper, 0);
-            lv_obj_t *other_switch_group = lv_obj_get_child(other_container, 1);
-            lv_obj_t *other_sw = lv_obj_get_child(other_switch_group, 1);
-            lever_states[i] = lv_obj_has_state(other_sw, LV_STATE_CHECKED);
-        }
+    
+    const bool *lever_states = controller_get_tab_states(tab_index);
+    if (tab_def && lever_states) {
         current_illegal = lever_is_state_illegal(tab_def, lever_states, lever_index);
     }
     
@@ -193,12 +184,19 @@ static void lever_switch_event_cb(lv_event_t * e) {
     lv_obj_t * container = lv_obj_get_parent(switch_group);
     lv_obj_t * wrapper = lv_obj_get_parent(container);
     lv_obj_t * frame = lv_obj_get_parent(wrapper);
+    lv_obj_t * tab = lv_obj_get_parent(frame);
+    
+    int tab_index = lv_obj_get_index(tab);
+    int lever_index = lv_obj_get_index(wrapper);
+    bool is_thrown = lv_obj_has_state(sw, LV_STATE_CHECKED);
+    
+    // Update the controller state immediately before re-evaluating locks
+    controller_set_lever_state(tab_index, lever_index, is_thrown);
     
     // Update all levers in this frame to reflect new dependencies
     lever_frame_update_system_locks(frame);
     
     // Save state to NVS
-    lv_obj_t *tab = lv_obj_get_parent(frame);
     lv_obj_t *content = lv_obj_get_parent(tab);
     lv_obj_t *tv = lv_obj_get_parent(content);
     lv_obj_t *system_wrapper = lv_obj_get_parent(tv);
@@ -206,7 +204,6 @@ static void lever_switch_event_cb(lv_event_t * e) {
     state_manager_save(system_wrapper, config_manager_get_hash());
 
     // Produce LCC Event
-    int lever_index = lv_obj_get_index(wrapper);
     const tab_def_t *tab_def = (const tab_def_t *)lv_obj_get_user_data(frame);
     if (tab_def && lever_index >= 0 && lever_index < tab_def->lever_count) {
         const lever_def_t *lever_def = &tab_def->levers[lever_index];

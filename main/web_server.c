@@ -25,6 +25,7 @@
 #include "config_manager.h"
 #include "esp_system.h"
 #include "freertos/timers.h"
+#include "openlcb_user_config.h"
 
 static TimerHandle_t wifi_retry_timer = NULL;
 
@@ -216,8 +217,14 @@ static esp_err_t api_status_handler(httpd_req_t *req) {
     char sta_ip[32] = "Not Connected";
     web_server_get_sta_ip(sta_ip, sizeof(sta_ip));
 
-    char response[256];
-    snprintf(response, sizeof(response), "{\"ap_ip\":\"192.168.4.1\",\"sta_ip\":\"%s\",\"tcp_port\":12021}", sta_ip);
+    uint64_t nid = NODE_ID;
+    char node_id_str[32];
+    snprintf(node_id_str, sizeof(node_id_str), "%02X.%02X.%02X.%02X.%02X.%02X",
+             (uint8_t)(nid >> 40), (uint8_t)(nid >> 32), (uint8_t)(nid >> 24),
+             (uint8_t)(nid >> 16), (uint8_t)(nid >> 8), (uint8_t)(nid));
+
+    char response[512];
+    snprintf(response, sizeof(response), "{\"ap_ip\":\"192.168.4.1\",\"sta_ip\":\"%s\",\"tcp_port\":12021,\"node_id\":\"%s\",\"version\":\"%s\"}", sta_ip, node_id_str, PROJECT_VER);
     httpd_resp_sendstr(req, response);
     return ESP_OK;
 }

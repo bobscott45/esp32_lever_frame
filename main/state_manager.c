@@ -19,6 +19,7 @@
 #include "nvs.h"
 #include "esp_log.h"
 #include "lever_frame.h"
+#include "controller.h"
 
 static const char *TAG = "StateManager";
 
@@ -69,6 +70,9 @@ static void iterate_levers(lv_obj_t *wrapper, uint8_t *states, bool apply) {
                 } else {
                     lv_obj_clear_state(sw, LV_STATE_CHECKED);
                 }
+                
+                // Update controller state
+                controller_set_lever_state(t, l, is_reversed);
                 
                 if (is_locked) {
                     lv_obj_add_state(collar_btn, LV_STATE_CHECKED);

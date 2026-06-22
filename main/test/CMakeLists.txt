@@ -31,3 +31,11 @@ add_executable(run_config_tests
 )
 target_include_directories(run_config_tests PRIVATE .. mocks ${CJSON_DIR})
 target_link_libraries(run_config_tests PRIVATE unity)
+
+# 3. Controller Tests
+add_executable(run_controller_tests
+    test_controller.c
+    ../controller.c
+)
+target_include_directories(run_controller_tests PRIVATE .. mocks)
+target_link_libraries(run_controller_tests PRIVATE unity)

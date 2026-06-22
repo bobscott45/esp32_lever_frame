@@ -55,3 +55,43 @@ bool lever_evaluate_interlocking(const tab_def_t *tab_def, const bool *lever_sta
     }
     return true;
 }
+
+bool lever_is_state_illegal(const tab_def_t *tab_def, const bool *lever_states, int lever_index_to_check) {
+    if (!tab_def || !lever_states) return false;
+
+    bool is_thrown = lever_states[lever_index_to_check];
+
+    if (is_thrown) {
+        // If this lever is thrown, are its conditions met?
+        const lever_def_t *my_def = &tab_def->levers[lever_index_to_check];
+        for (int i = 0; i < MAX_INTERLOCKING_CONDITIONS; i++) {
+            if (my_def->conditions[i].target_lever_index < 0) break;
+            if (!evaluate_condition(&my_def->conditions[i], tab_def, lever_states, lever_index_to_check, is_thrown)) {
+                return true; // Illegal! My condition is not met.
+            }
+        }
+    }
+    
+    // Regardless of my state, does any OTHER thrown lever have a condition involving ME that is currently failing?
+    for (int i = 0; i < tab_def->lever_count; i++) {
+        if (i == lever_index_to_check) continue;
+        
+        if (lever_states[i]) {
+            const lever_def_t *other_def = &tab_def->levers[i];
+            for (int c = 0; c < MAX_INTERLOCKING_CONDITIONS; c++) {
+                if (other_def->conditions[c].target_lever_index < 0) break;
+                
+                // We only care if THIS condition involves THIS lever
+                if (other_def->conditions[c].target_lever_index == lever_index_to_check ||
+                    other_def->conditions[c].alt_target_lever_index == lever_index_to_check) {
+                    
+                    // Evaluate the condition with my CURRENT state
+                    if (!evaluate_condition(&other_def->conditions[c], tab_def, lever_states, lever_index_to_check, is_thrown)) {
+                        return true; // Illegal! Another lever's condition on me is failing.
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
