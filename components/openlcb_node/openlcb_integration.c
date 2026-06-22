@@ -134,7 +134,7 @@ void openlcb_integration_init(void) {
         ESP_LOGE(TAG, "Failed to create OpenLCB Node!");
     }
     
-    xTaskCreate(openlcb_task, "openlcb_task", 4096, NULL, 5, NULL);
+    xTaskCreatePinnedToCore(openlcb_task, "openlcb_task", 4096, NULL, 5, NULL, 0);
 }
 
 void openlcb_produce_event(event_id_t event_id) {

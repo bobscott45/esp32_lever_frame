@@ -93,13 +93,14 @@
                 is_driver_connected = true;
                 ESP_LOGI(TAG, "TWAI driver started successfully.");
 
-                xTaskCreate(
+                xTaskCreatePinnedToCore(
                     can_rx_task,
                     "can_rx_task",
                     3072,
                     NULL,
                     10,
-                    &can_rx_task_handle
+                    &can_rx_task_handle,
+                    0 // Pin to Core 0 (leave Core 1 for LVGL UI)
                 );
             } else {
                 ESP_LOGE(TAG, "Failed to start TWAI driver.");

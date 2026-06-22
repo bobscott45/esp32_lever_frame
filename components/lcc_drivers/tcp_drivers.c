@@ -125,5 +125,5 @@ void tcp_driver_initialize(void) {
     ESP_LOGI(TAG, "Initializing TCP/IP driver");
     
     // Start the raw TCP server task instead of start_http_server(). It will wait for WiFi internally.
-    xTaskCreate(tcp_server_task, "openlcb_tcp", 4096, NULL, 5, NULL);
+    xTaskCreatePinnedToCore(tcp_server_task, "openlcb_tcp", 4096, NULL, 5, NULL, 0);
 }
