@@ -8,7 +8,7 @@ static bool **s_tab_lever_locks = NULL;
 static int *s_lever_counts = NULL;
 static int s_tab_count = 0;
 static int s_active_tab_index = 0;
-static controller_state_changed_cb_t s_state_cb = NULL;
+#include "system_events.h"
 
 void controller_init(const lever_system_config_t *config) {
     controller_free();
@@ -97,9 +97,7 @@ void controller_set_active_tab(int tab_index) {
     }
 }
 
-void controller_set_state_changed_cb(controller_state_changed_cb_t cb) {
-    s_state_cb = cb;
-}
+
 
 bool controller_request_lever_move(int tab_index, int lever_index, bool target_state_thrown) {
     if (!s_tab_lever_states || tab_index < 0 || tab_index >= s_tab_count) return false;
@@ -116,9 +114,12 @@ bool controller_request_lever_move(int tab_index, int lever_index, bool target_s
     
     if (allowed) {
         s_tab_lever_states[tab_index][lever_index] = target_state_thrown;
-        if (s_state_cb) {
-            s_state_cb(tab_index, lever_index, target_state_thrown);
-        }
+        event_lever_state_t ev_data = {
+            .tab_index = tab_index,
+            .lever_index = lever_index,
+            .new_state = target_state_thrown
+        };
+        esp_event_post(LEVER_SYSTEM_EVENTS, EVENT_LEVER_STATE_CHANGED, &ev_data, sizeof(ev_data), portMAX_DELAY);
         return true;
     }
     

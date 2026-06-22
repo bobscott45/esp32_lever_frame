@@ -21,7 +21,7 @@
 #include <esp_err.h>
 #include "interlocking.h"
 
-typedef void (*config_change_cb_t)(void);
+
 
 /**
  * @brief Initialize the configuration manager, load saved configuration from NVS,
@@ -55,11 +55,6 @@ esp_err_t config_manager_save_json(const char *json_str);
  */
 char *config_manager_get_json_str(void);
 
-/**
- * @brief Set a callback to be triggered when the configuration is updated.
- * @param cb The callback function
- */
-void config_manager_set_on_change(config_change_cb_t cb);
 
 /**
  * @brief Free any pending configuration memory.

@@ -23,6 +23,7 @@
 #include "nvs.h"
 #include "esp_log.h"
 #include "cJSON.h"
+#include "system_events.h"
 
 static const char *TAG = "ConfigManager";
 
@@ -98,7 +99,6 @@ uint32_t config_manager_get_hash(void) {
 }
 
 // Configuration change callback
-static config_change_cb_t on_config_change = NULL;
 
 const char *lever_type_to_str(lever_type_t type) {
     switch (type) {
@@ -474,8 +474,8 @@ esp_err_t config_manager_save_json_internal(const char *json_str, bool notify) {
     ESP_LOGI(TAG, "Dynamic configuration updated and saved to NVS.");
 
     // Trigger callback if registered
-    if (notify && on_config_change) {
-        on_config_change();
+    if (notify) {
+        esp_event_post(LEVER_SYSTEM_EVENTS, EVENT_CONFIG_RELOADED, NULL, 0, portMAX_DELAY);
     }
 
     return ESP_OK;
@@ -679,9 +679,7 @@ esp_err_t config_manager_update_lever_bool(int tab_idx, int lever_idx, const cha
     return update_config_with_cjson(update_lever_bool_cb, &ctx, false);
 }
 
-void config_manager_set_on_change(config_change_cb_t cb) {
-    on_config_change = cb;
-}
+
 
 void config_manager_deinit(void) {
     if (is_using_dynamic) {

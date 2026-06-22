@@ -20,9 +20,6 @@ void controller_set_lever_lock(int tab_index, int lever_index, bool is_locked);
 int controller_get_active_tab(void);
 void controller_set_active_tab(int tab_index);
 
-// Callbacks
-typedef void (*controller_state_changed_cb_t)(int tab_index, int lever_index, bool new_state);
-void controller_set_state_changed_cb(controller_state_changed_cb_t cb);
 
 // Serialization
 size_t controller_get_serialized_size(void);

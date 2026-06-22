@@ -25,6 +25,8 @@
 #include "openlcb_integration.h"
 #include "controller.h"
 #include "state_manager.h"
+#include "system_events.h"
+#include "esp_event.h"
 #include <string.h>
 
 static const char *TAG = "main";
@@ -294,7 +296,14 @@ static void screen_gesture_cb(lv_event_t * e) {
     }
 }
 
-static void on_controller_state_changed(int tab_index, int lever_index, bool new_state) {
+static void on_controller_state_changed(void* handler_args, esp_event_base_t base, int32_t id, void* event_data) {
+    if (id != EVENT_LEVER_STATE_CHANGED) return;
+    
+    event_lever_state_t *ev = (event_lever_state_t *)event_data;
+    int tab_index = ev->tab_index;
+    int lever_index = ev->lever_index;
+    bool new_state = ev->new_state;
+
     // Save state to NVS
     state_manager_save(config_manager_get_hash());
     
@@ -351,7 +360,6 @@ static void rebuild_ui_timer_cb(lv_timer_t *timer)
         const lever_system_config_t *curr_config = config_manager_get_current();
         
         controller_init(curr_config);
-        controller_set_state_changed_cb(on_controller_state_changed);
         
         system_tabview = lever_system_create(lv_scr_act(), curr_config);
         
@@ -365,8 +373,10 @@ static void rebuild_ui_timer_cb(lv_timer_t *timer)
     }
 }
 
-static void on_configuration_changed(void)
+static void on_configuration_changed(void* handler_args, esp_event_base_t base, int32_t id, void* event_data)
 {
+    if (id != EVENT_CONFIG_RELOADED) return;
+
     ESP_LOGI(TAG, "Configuration changed! Scheduling UI rebuild...");
     ui_rebuild_requested = true;
 }
@@ -375,6 +385,13 @@ void app_main(void)
 {
     esp_lcd_panel_handle_t panel = NULL;
     esp_lcd_touch_handle_t touch = NULL;
+
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
+
+    // Register event handlers
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(LEVER_SYSTEM_EVENTS, EVENT_CONFIG_RELOADED, on_configuration_changed, NULL, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(LEVER_SYSTEM_EVENTS, EVENT_LEVER_STATE_CHANGED, on_controller_state_changed, NULL, NULL));
+
 
     // 1. Initialize hardware drivers and LVGL first
     ESP_ERROR_CHECK(display_hal_init(&panel, &touch));
@@ -415,7 +432,6 @@ void app_main(void)
 
     // 2. Initialize configuration manager and load dynamic config
     ESP_ERROR_CHECK(config_manager_init());
-    config_manager_set_on_change(on_configuration_changed);
 
     // 3. Initialize Wi-Fi softAP and start the configuration web server
     // (This triggers connection to Home Wi-Fi)
@@ -436,7 +452,6 @@ void app_main(void)
         const lever_system_config_t *curr_config = config_manager_get_current();
         
         controller_init(curr_config);
-        controller_set_state_changed_cb(on_controller_state_changed);
         
         // Restore lever states if configuration matches
         if (curr_config->restore_last_state) {
