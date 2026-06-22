@@ -4,7 +4,7 @@
 # Updates the project version across CMakeLists.txt, CHANGELOG.md,
 # and C/XML source files.
 
-cd "$(dirname "$0")" || exit 1
+cd "$(dirname "$0")/.." || exit 1
 
 NEW_VERSION=$1
 

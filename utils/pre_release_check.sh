@@ -5,7 +5,7 @@
 # matches the hardcoded versions in the C and XML source files.
 
 # Navigate to the script's parent directory (project root)
-cd "$(dirname "$0")" || exit 1
+cd "$(dirname "$0")/.." || exit 1
 
 # Extract latest version from CHANGELOG.md
 # Assumes format like: ## [1.2.0] - 2026-06-22
