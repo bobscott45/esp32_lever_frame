@@ -26,6 +26,7 @@
 #include "controller.h"
 #include "state_manager.h"
 #include "system_events.h"
+#include "esp_app_desc.h"
 #include "esp_event.h"
 #include <string.h>
 
@@ -192,6 +193,9 @@ static void ui_show_info_overlay(void) {
     ui_add_drawer_row(table, "Wi-Fi AP IP:", "192.168.4.1", 0x0078D7);
     ui_add_drawer_row(table, "Home Wi-Fi IP:", sta_ip, 0x0078D7);
     ui_add_drawer_row(table, "LCC TCP Port:", "12021", 0x0078D7);
+    
+    const esp_app_desc_t *app_desc = esp_app_get_description();
+    ui_add_drawer_row(table, "System Version:", app_desc->version, 0x0078D7);
     
     lv_obj_t *spacer = lv_obj_create(table);
     lv_obj_remove_style_all(spacer);
