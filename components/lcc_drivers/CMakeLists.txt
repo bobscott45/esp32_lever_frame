@@ -5,6 +5,6 @@ idf_component_register(
              "can_drivers.c"
              "i2c_drivers.c"
              "tcp_drivers.c"
-        INCLUDE_DIRS "." "../../main"
-        REQUIRES lcc esp_wifi nvs_flash esp_event driver esp_driver_gpio esp_driver_twai esp-idf-lib__i2cdev lvgl__lvgl
+        INCLUDE_DIRS "." "../openlcb_node"
+        REQUIRES lcc esp_wifi nvs_flash esp_event driver esp_driver_gpio esp_driver_twai esp-idf-lib__i2cdev lvgl__lvgl lever_core
 )

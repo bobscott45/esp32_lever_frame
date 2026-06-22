@@ -17,6 +17,18 @@
 
 #include "lever_frame.h"
 #include "config_manager.h"
+#include "controller.h"
+
+static void tabview_changed_cb(lv_event_t *e) {
+    lv_obj_t *tv = lv_event_get_target(e);
+    uint16_t act = lv_tabview_get_tab_act(tv);
+    controller_set_active_tab(act);
+    
+    // Auto-save the state to NVS via state_manager whenever tab changes
+    // Wait, state_manager_save needs config hash. We'll add it here.
+    #include "state_manager.h"
+    state_manager_save(config_manager_get_hash());
+}
 
 lv_obj_t *lever_frame_create(lv_obj_t *parent) {
     lv_obj_t *frame = lv_obj_create(parent);
@@ -52,12 +64,12 @@ lv_obj_t *lever_frame_create(lv_obj_t *parent) {
     return frame;
 }
 
-lv_obj_t *lever_frame_add_lever(lv_obj_t *frame, const lever_def_t *lever_def) {
+lv_obj_t *lever_frame_add_lever(lv_obj_t *frame, const lever_def_t *lever_def, int tab_index, int lever_index) {
     const tab_def_t *tab_def = (const tab_def_t *)lv_obj_get_user_data(frame);
     uint8_t lines = (tab_def && tab_def->label_lines > 0) ? tab_def->label_lines : 2;
     uint8_t height = (tab_def && tab_def->label_line_height > 0) ? tab_def->label_line_height : 18;
     
-    lv_obj_t *lever = lever_create(frame, lever_def, lines, height);
+    lv_obj_t *lever = lever_create(frame, lever_def, lines, height, tab_index, lever_index);
     return lever;
 }
 
@@ -102,6 +114,9 @@ lv_obj_t *lever_system_create(lv_obj_t *parent, const lever_system_config_t *con
     lv_obj_set_style_border_width(tab_bar, 2, 0);
     lv_obj_set_style_border_side(tab_bar, LV_BORDER_SIDE_BOTTOM, 0);
     lv_obj_set_style_pad_all(tab_bar, 0, 0);
+    
+    // Listen for tab changes
+    lv_obj_add_event_cb(tv, tabview_changed_cb, LV_EVENT_VALUE_CHANGED, NULL);
 
     // Iterate through all defined tabs
     for (size_t t = 0; t < config->tab_count; t++) {
@@ -125,7 +140,7 @@ lv_obj_t *lever_system_create(lv_obj_t *parent, const lever_system_config_t *con
         // Add all defined levers to the frame
         for (size_t l = 0; l < tab_def->lever_count; l++) {
             const lever_def_t *lever_def = &tab_def->levers[l];
-            lever_frame_add_lever(frame, lever_def);
+            lever_frame_add_lever(frame, lever_def, t, l);
         }
         
         // Evaluate initial system locks for all levers in the frame

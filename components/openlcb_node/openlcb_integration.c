@@ -28,13 +28,15 @@
 #include "freertos/task.h"
 #include "state_manager.h"
 #include "config_manager.h"
+#include "controller.h"
 #include "interlocking.h"
-#include "bsp/lvgl_port.h"
 #include <string.h>
 
 static const char *TAG = "OPENLCB_INT";
 
 openlcb_node_t *local_node = NULL;
+
+void openlcb_integration_update_levers_by_event(event_id_t event_id);
 
 static void on_consumed_event_pcer(openlcb_node_t *openlcb_node, uint16_t index, event_id_t *event_id, event_payload_t *payload) {
     ESP_LOGI(TAG, "Consumed Event Received! EventID: 0x%016llX", (unsigned long long)*event_id);
@@ -170,111 +172,33 @@ event_id_t lcc_parse_event_id(const char *str) {
 }
 
 void openlcb_integration_update_levers_by_event(event_id_t event_id) {
-    extern lv_obj_t *system_tabview;
-    if (!system_tabview) return;
+    const lever_system_config_t *sys_config = config_manager_get_current();
+        if (!sys_config) return;
 
-    if (!lvgl_port_lock(0)) {
-        ESP_LOGW(TAG, "Failed to acquire LVGL port lock for LCC event update");
-        return;
-    }
+        for (size_t t = 0; t < sys_config->tab_count; t++) {
+            const tab_def_t *tab = &sys_config->tabs[t];
+            for (size_t l = 0; l < tab->lever_count; l++) {
+                const lever_def_t *lever = &tab->levers[l];
+                if (!lever->lcc_enabled) continue;
 
-    lv_obj_t *tv = lv_obj_get_child(system_tabview, 0);
-    if (!tv) {
-        lvgl_port_unlock();
-        return;
-    }
-    lv_obj_t *content = lv_tabview_get_content(tv);
-    if (!content) {
-        lvgl_port_unlock();
-        return;
-    }
+                event_id_t normal_eid = lcc_parse_event_id(lever->lcc_event_normal);
+                event_id_t reversed_eid = lcc_parse_event_id(lever->lcc_event_reversed);
 
-    uint32_t tab_count = lv_obj_get_child_cnt(content);
-
-    for (uint32_t t = 0; t < tab_count; t++) {
-        lv_obj_t *tab = lv_obj_get_child(content, t);
-        if (!tab) continue;
-
-        lv_obj_t *frame = lv_obj_get_child(tab, 0);
-        if (!frame) continue;
-
-        const tab_def_t *tab_def = (const tab_def_t *)lv_obj_get_user_data(frame);
-        if (!tab_def) continue;
-
-        uint32_t l_count = lv_obj_get_child_cnt(frame);
-        
-        bool *lever_states = malloc(sizeof(bool) * l_count);
-        if (lever_states) {
-            for (uint32_t i = 0; i < l_count; i++) {
-                lv_obj_t *other_wrapper = lv_obj_get_child(frame, i);
-                lv_obj_t *other_container = lv_obj_get_child(other_wrapper, 0);
-                lv_obj_t *other_switch_group = lv_obj_get_child(other_container, 1);
-                lv_obj_t *other_sw = lv_obj_get_child(other_switch_group, 1);
-                lever_states[i] = other_sw ? lv_obj_has_state(other_sw, LV_STATE_CHECKED) : false;
-            }
-        }
-
-        for (uint32_t l = 0; l < l_count; l++) {
-            lv_obj_t *l_wrapper = lv_obj_get_child(frame, l);
-            if (!l_wrapper) continue;
-
-            const lever_def_t *lever_def = &tab_def->levers[l];
-            if (!lever_def->lcc_enabled) continue;
-
-            event_id_t normal_eid = lcc_parse_event_id(lever_def->lcc_event_normal);
-            event_id_t reversed_eid = lcc_parse_event_id(lever_def->lcc_event_reversed);
-
-            if (normal_eid != 0 && normal_eid == event_id) {
-                lv_obj_t *container = lv_obj_get_child(l_wrapper, 0);
-                if (container) {
-                    lv_obj_t *switch_group = lv_obj_get_child(container, 1);
-                    if (switch_group) {
-                        lv_obj_t *sw = lv_obj_get_child(switch_group, 1);
-                        if (sw && lv_obj_has_state(sw, LV_STATE_CHECKED)) {
-                            bool allowed = true;
-                            const lever_system_config_t *sys_config = config_manager_get_current();
-                            if (sys_config && sys_config->conflict_policy == INTERLOCK_POLICY_STRICT_LOCAL && lever_states) {
-                                allowed = lever_evaluate_interlocking(tab_def, lever_states, l, false);
-                            }
-                            if (allowed) {
-                                lv_obj_clear_state(sw, LV_STATE_CHECKED);
-                                lv_obj_send_event(sw, LV_EVENT_VALUE_CHANGED, NULL);
-                                if (lever_states) lever_states[l] = false;
-                            } else {
-                                ESP_LOGI(TAG, "LCC normal event ignored due to strict local interlocking policy.");
-                            }
+                if (normal_eid != 0 && normal_eid == event_id) {
+                    if (controller_get_lever_state(t, l)) {
+                        bool allowed = controller_request_lever_move(t, l, false);
+                        if (!allowed) {
+                            ESP_LOGI(TAG, "LCC normal event ignored due to strict local interlocking policy.");
                         }
                     }
-                }
-            } else if (reversed_eid != 0 && reversed_eid == event_id) {
-                lv_obj_t *container = lv_obj_get_child(l_wrapper, 0);
-                if (container) {
-                    lv_obj_t *switch_group = lv_obj_get_child(container, 1);
-                    if (switch_group) {
-                        lv_obj_t *sw = lv_obj_get_child(switch_group, 1);
-                        if (sw && !lv_obj_has_state(sw, LV_STATE_CHECKED)) {
-                            bool allowed = true;
-                            const lever_system_config_t *sys_config = config_manager_get_current();
-                            if (sys_config && sys_config->conflict_policy == INTERLOCK_POLICY_STRICT_LOCAL && lever_states) {
-                                allowed = lever_evaluate_interlocking(tab_def, lever_states, l, true);
-                            }
-                            if (allowed) {
-                                lv_obj_add_state(sw, LV_STATE_CHECKED);
-                                lv_obj_send_event(sw, LV_EVENT_VALUE_CHANGED, NULL);
-                                if (lever_states) lever_states[l] = true;
-                            } else {
-                                ESP_LOGI(TAG, "LCC reverse event ignored due to strict local interlocking policy.");
-                            }
+                } else if (reversed_eid != 0 && reversed_eid == event_id) {
+                    if (!controller_get_lever_state(t, l)) {
+                        bool allowed = controller_request_lever_move(t, l, true);
+                        if (!allowed) {
+                            ESP_LOGI(TAG, "LCC reverse event ignored due to strict local interlocking policy.");
                         }
                     }
-                }
             }
         }
-        
-        if (lever_states) {
-            free(lever_states);
-        }
     }
-
-    lvgl_port_unlock();
 }

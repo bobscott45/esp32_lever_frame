@@ -45,7 +45,7 @@
 #define LEVER_STATE_NORMAL_COLOR   0x111111 // Dark Void for the slot
 
 #include "lvgl.h"
-lv_obj_t *lever_create(lv_obj_t *parent, const void *lever_def_ptr, uint8_t label_lines, uint8_t label_line_height);
+lv_obj_t *lever_create(lv_obj_t *parent, const void *lever_def, uint8_t label_lines, uint8_t label_line_height, int tab_index, int lever_index);
 void lever_set_locked(lv_obj_t *wrapper, bool locked);
 void lever_set_state_labels(lv_obj_t *wrapper, const char *up_text, const char *down_text);
 void lever_frame_update_system_locks(lv_obj_t *frame);

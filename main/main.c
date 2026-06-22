@@ -24,6 +24,7 @@
 #include "esp_log.h"
 #include "openlcb_integration.h"
 #include "controller.h"
+#include "state_manager.h"
 #include <string.h>
 
 static const char *TAG = "main";
@@ -293,6 +294,31 @@ static void screen_gesture_cb(lv_event_t * e) {
     }
 }
 
+static void on_controller_state_changed(int tab_index, int lever_index, bool new_state) {
+    // Save state to NVS
+    state_manager_save(config_manager_get_hash());
+    
+    // Fire OpenLCB event
+    const lever_system_config_t *system_config = config_manager_get_current();
+    if (system_config && system_config->lcc_enabled) {
+        if (tab_index >= 0 && tab_index < system_config->tab_count) {
+            const tab_def_t *tab_def = &system_config->tabs[tab_index];
+            if (lever_index >= 0 && lever_index < tab_def->lever_count) {
+                const lever_def_t *lever_def = &tab_def->levers[lever_index];
+                if (lever_def->lcc_enabled) {
+                    const char *event_str = new_state ? lever_def->lcc_event_reversed : lever_def->lcc_event_normal;
+                    if (event_str && strlen(event_str) > 0) {
+                        event_id_t eid = lcc_parse_event_id(event_str);
+                        if (eid != 0) {
+                            openlcb_produce_event(eid);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 static bool ui_rebuild_requested = false;
 
 static void rebuild_ui_timer_cb(lv_timer_t *timer)
@@ -325,6 +351,7 @@ static void rebuild_ui_timer_cb(lv_timer_t *timer)
         const lever_system_config_t *curr_config = config_manager_get_current();
         
         controller_init(curr_config);
+        controller_set_state_changed_cb(on_controller_state_changed);
         
         system_tabview = lever_system_create(lv_scr_act(), curr_config);
         
@@ -409,13 +436,21 @@ void app_main(void)
         const lever_system_config_t *curr_config = config_manager_get_current();
         
         controller_init(curr_config);
+        controller_set_state_changed_cb(on_controller_state_changed);
+        
+        // Restore lever states if configuration matches
+        if (curr_config->restore_last_state) {
+            state_manager_load_and_apply(config_manager_get_hash());
+        }
         
         system_tabview = lever_system_create(lv_scr_act(), curr_config);
         
-        // Restore lever states if configuration matches
-        #include "state_manager.h"
-        if (curr_config->restore_last_state) {
-            state_manager_load_and_apply(system_tabview, config_manager_get_hash());
+        // Set the active tab to what was restored from NVS
+        if (system_tabview) {
+            lv_obj_t *tv = lv_obj_get_child(system_tabview, 0);
+            if (tv) {
+                lv_tabview_set_act(tv, controller_get_active_tab(), LV_ANIM_OFF);
+            }
         }
         
         // Register gesture on the active screen to pull down the Wi-Fi info overlay

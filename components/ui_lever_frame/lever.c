@@ -23,7 +23,6 @@
 #include <string.h>
 #include "state_manager.h"
 #include "config_manager.h"
-#include "openlcb_integration.h"
 #include "controller.h"
 
 static void lever_update_system_lock_ui(lv_obj_t *sw);
@@ -42,16 +41,18 @@ static void collar_btn_event_cb(lv_event_t * e) {
     lv_obj_t *switch_group = lv_obj_get_child(container, 1);
     lv_obj_t *sw = lv_obj_get_child(switch_group, 1);
     
+    lv_obj_t *frame = lv_obj_get_parent(wrapper);
+    lv_obj_t *tab = lv_obj_get_parent(frame);
+    
+    int tab_index = lv_obj_get_index(tab);
+    int lever_index = lv_obj_get_index(wrapper);
+    bool is_locked = lv_obj_has_state(btn, LV_STATE_CHECKED);
+    controller_set_lever_lock(tab_index, lever_index, is_locked);
+    
     // Defer all UI state logic to the centralized lock UI updater
     lever_update_system_lock_ui(sw);
     
-    lv_obj_t *frame = lv_obj_get_parent(wrapper);
-    lv_obj_t *tab = lv_obj_get_parent(frame);
-    lv_obj_t *content = lv_obj_get_parent(tab);
-    lv_obj_t *tv = lv_obj_get_parent(content);
-    lv_obj_t *system_wrapper = lv_obj_get_parent(tv);
-    
-    state_manager_save(system_wrapper, config_manager_get_hash());
+    state_manager_save(config_manager_get_hash());
 }
 
 
@@ -206,30 +207,6 @@ static void lever_switch_event_cb(lv_event_t * e) {
     
     // Update all levers in this frame to reflect new dependencies
     lever_frame_update_system_locks(frame);
-    
-    // Save state to NVS
-    lv_obj_t *content = lv_obj_get_parent(tab);
-    lv_obj_t *tv = lv_obj_get_parent(content);
-    lv_obj_t *system_wrapper = lv_obj_get_parent(tv);
-    
-    state_manager_save(system_wrapper, config_manager_get_hash());
-
-    // Produce LCC Event
-    const tab_def_t *tab_def = (const tab_def_t *)lv_obj_get_user_data(frame);
-    if (tab_def && lever_index >= 0 && lever_index < tab_def->lever_count) {
-        const lever_def_t *lever_def = &tab_def->levers[lever_index];
-        const lever_system_config_t *system_config = config_manager_get_current();
-        if (system_config && system_config->lcc_enabled && lever_def->lcc_enabled) {
-            bool is_thrown = lv_obj_has_state(sw, LV_STATE_CHECKED);
-            const char *event_str = is_thrown ? lever_def->lcc_event_reversed : lever_def->lcc_event_normal;
-            if (strlen(event_str) > 0) {
-                event_id_t eid = lcc_parse_event_id(event_str);
-                if (eid != 0) {
-                    openlcb_produce_event(eid);
-                }
-            }
-        }
-    }
 }
 
 static lv_obj_t *container_create(lv_obj_t *parent) {
@@ -573,7 +550,7 @@ static lv_obj_t *color_bar_create(lv_obj_t *parent, uint32_t color) {
     return obj;
 }
 
-lv_obj_t *lever_create(lv_obj_t *parent, const void *lever_def_ptr, uint8_t label_lines, uint8_t label_line_height) {
+lv_obj_t *lever_create(lv_obj_t *parent, const void *lever_def_ptr, uint8_t label_lines, uint8_t label_line_height, int tab_index, int lever_index) {
     const lever_def_t *lever_def = (const lever_def_t *)lever_def_ptr;
     uint32_t type_color = 0x000000;
     const char *up_text = "";
@@ -651,6 +628,9 @@ lv_obj_t *lever_create(lv_obj_t *parent, const void *lever_def_ptr, uint8_t labe
     
     lv_obj_t *normal_label = static_label_create(switch_group, up_text);
     lv_obj_t *sw = lever_switch_create(switch_group, type_color);
+    if (controller_get_lever_state(tab_index, lever_index)) {
+        lv_obj_add_state(sw, LV_STATE_CHECKED);
+    }
     lv_obj_t *thrown_label = static_label_create(switch_group, down_text);
     
     // Create the lock indicator inside the switch slot
@@ -682,7 +662,15 @@ lv_obj_t *lever_create(lv_obj_t *parent, const void *lever_def_ptr, uint8_t labe
     // Label inside the collar button
     lv_obj_t *collar_lbl = lv_label_create(collar_btn);
     lv_obj_align(collar_lbl, LV_ALIGN_CENTER, 0, 0);
-    lv_label_set_text(collar_lbl, "UNLOCKED");
+    
+    // Initialize the lock state visually
+    if (controller_get_lever_lock(tab_index, lever_index)) {
+        lv_obj_add_state(collar_btn, LV_STATE_CHECKED);
+        lv_label_set_text(collar_lbl, "LOCKED");
+    } else {
+        lv_label_set_text(collar_lbl, "UNLOCKED");
+    }
+    
     lv_obj_set_style_text_color(collar_lbl, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
     
     extern const lv_font_t lv_font_montserrat_12;

@@ -12,6 +12,23 @@ void controller_free(void);
 bool controller_get_lever_state(int tab_index, int lever_index);
 void controller_set_lever_state(int tab_index, int lever_index, bool is_thrown);
 
+// Manual locks
+bool controller_get_lever_lock(int tab_index, int lever_index);
+void controller_set_lever_lock(int tab_index, int lever_index, bool is_locked);
+
+// Active Tab
+int controller_get_active_tab(void);
+void controller_set_active_tab(int tab_index);
+
+// Callbacks
+typedef void (*controller_state_changed_cb_t)(int tab_index, int lever_index, bool new_state);
+void controller_set_state_changed_cb(controller_state_changed_cb_t cb);
+
+// Serialization
+size_t controller_get_serialized_size(void);
+bool controller_get_serialized_state(uint8_t *buffer, size_t max_len);
+bool controller_apply_serialized_state(const uint8_t *buffer, size_t len);
+
 // Returns a pointer to the array of lever states for a specific tab
 const bool* controller_get_tab_states(int tab_index);
 

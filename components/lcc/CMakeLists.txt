@@ -7,5 +7,5 @@ file(GLOB_RECURSE SOURCES "OpenLcbCLib/src/*.c")
 
 idf_component_register(
         SRCS ${SOURCES}
-        INCLUDE_DIRS "../../main"  "OpenLcbCLib/src"
+        INCLUDE_DIRS "../openlcb_node"  "OpenLcbCLib/src"
 )

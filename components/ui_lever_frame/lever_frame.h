@@ -37,7 +37,7 @@ lv_obj_t *lever_frame_create(lv_obj_t *parent);
  * @param type The type of lever (sets color and text semantics)
  * @return The created lever wrapper object
  */
-lv_obj_t *lever_frame_add_lever(lv_obj_t *frame, const lever_def_t *lever_def);
+lv_obj_t *lever_frame_add_lever(lv_obj_t *frame, const lever_def_t *lever_def, int tab_index, int lever_index);
 
 /**
  * Creates a complete lever system (tabview and horizontal lever frames) based on the configuration struct.

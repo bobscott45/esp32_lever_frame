@@ -47,9 +47,6 @@ uint8_t config_memory_cache[CONFIG_MEM_SIZE] = {0};
 
 static const char *TAG = "LCC_DRIVERS";
 
-char current_user_name[64] = {0};
-char current_user_desc[65] = {0};
-
 void save_config_to_nvs(void) {
     nvs_handle_t my_handle;
     if (nvs_open("openlcb", NVS_READWRITE, &my_handle) == ESP_OK) {
@@ -60,18 +57,6 @@ void save_config_to_nvs(void) {
     }
 }
 
-
-
-void save_strings_to_nvs(void) {
-    nvs_handle_t my_handle;
-    if (nvs_open("openlcb", NVS_READWRITE, &my_handle) == ESP_OK) {
-        nvs_set_str(my_handle, "user_name", current_user_name);
-        nvs_set_str(my_handle, "user_desc", current_user_desc);
-        nvs_commit(my_handle);
-        nvs_close(my_handle);
-        ESP_LOGI("NVS", "Node strings saved to flash.");
-    }
-}
 
 void init_node_storage(void) {
 
@@ -102,6 +87,19 @@ void init_node_storage(void) {
         nvs_set_blob(my_handle, "config_mem", config_memory_cache, CONFIG_MEM_SIZE);
         nvs_commit(my_handle);
     }
+
+    // Safeguard: If the loaded NVS blob somehow contains a blank or uninitialized name/description, apply defaults.
+    if (config_memory_cache[0] == '\0' || config_memory_cache[0] == 0xFF) {
+        ESP_LOGW(TAG, "Loaded Node Name is blank. Applying default name and description.");
+        strncpy((char*)&config_memory_cache[0], DEFAULT_NODE_USER_NAME, 62);
+        config_memory_cache[62] = '\0';
+        strncpy((char*)&config_memory_cache[63], DEFAULT_NODE_DESCRIPTION, 63);
+        config_memory_cache[126] = '\0';
+        
+        nvs_set_blob(my_handle, "config_mem", config_memory_cache, CONFIG_MEM_SIZE);
+        nvs_commit(my_handle);
+    }
+
     nvs_close(my_handle);
     ESP_LOGI(TAG, "Loaded Node Name: %s", (char*)&config_memory_cache[0]);
 }

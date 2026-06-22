@@ -19,7 +19,7 @@
 #define CONFIG_MANAGER_H
 
 #include <esp_err.h>
-#include "lever_frame.h"
+#include "interlocking.h"
 
 typedef void (*config_change_cb_t)(void);
 
