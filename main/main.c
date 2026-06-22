@@ -16,7 +16,7 @@
  */
 
 #include "display_hal.h"
-#include "bsp/lvgl_port.h"
+#include "ui_porting.h"
 #include "lever.h"
 #include "lever_frame.h"
 #include "config_manager.h"
@@ -42,7 +42,7 @@ static void remote_config_timeout_cb(lv_timer_t *timer) {
 }
 
 void ui_show_remote_config_overlay(void) {
-    if (lvgl_port_lock(0)) {
+    if (ui_port_lock(0)) {
         if (!remote_config_overlay) {
             remote_config_overlay = lv_obj_create(lv_scr_act());
             lv_obj_set_size(remote_config_overlay, LV_PCT(100), LV_PCT(100));
@@ -66,7 +66,7 @@ void ui_show_remote_config_overlay(void) {
         remote_config_timer = lv_timer_create(remote_config_timeout_cb, 5000, NULL);
         lv_timer_set_repeat_count(remote_config_timer, 1);
         
-        lvgl_port_unlock();
+        ui_port_unlock();
     }
 }
 
@@ -378,11 +378,11 @@ void app_main(void)
 
     // 1. Initialize hardware drivers and LVGL first
     ESP_ERROR_CHECK(display_hal_init(&panel, &touch));
-    ESP_ERROR_CHECK(lvgl_port_init(panel, touch));
+    ESP_ERROR_CHECK(ui_port_init(panel, touch));
 
     // Show a Loading Splash Screen immediately
     lv_obj_t *loading_scr = NULL;
-    if (lvgl_port_lock(-1)) {
+    if (ui_port_lock(-1)) {
         loading_scr = lv_obj_create(lv_scr_act());
         lv_obj_remove_style_all(loading_scr);
         lv_obj_set_size(loading_scr, LV_PCT(100), LV_PCT(100));
@@ -397,7 +397,7 @@ void app_main(void)
         // Force layout update so the label is perfectly centered
         lv_obj_update_layout(loading_scr);
         
-        lvgl_port_unlock();
+        ui_port_unlock();
     }
     
     // Give the RGB panel time to lock onto the sync signals before turning the backlight on.
@@ -408,9 +408,9 @@ void app_main(void)
     // The screen sometimes breaks up on the very first frame.
     // The user noted it is "ok once it redraws".
     // So we force a complete screen invalidate immediately after the backlight turns on!
-    if (lvgl_port_lock(-1)) {
+    if (ui_port_lock(-1)) {
         lv_obj_invalidate(lv_scr_act());
-        lvgl_port_unlock();
+        ui_port_unlock();
     }
 
     // 2. Initialize configuration manager and load dynamic config
@@ -425,7 +425,7 @@ void app_main(void)
     openlcb_integration_init();
 
     // 5. Build final UI from configuration
-    if (lvgl_port_lock(-1)) {
+    if (ui_port_lock(-1)) {
         if (loading_scr) {
             lv_obj_del(loading_scr);
         }
@@ -460,6 +460,6 @@ void app_main(void)
         // Force layout update before unlocking
         lv_obj_update_layout(lv_scr_act());
         
-        lvgl_port_unlock();
+        ui_port_unlock();
     }
 }
