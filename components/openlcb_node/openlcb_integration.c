@@ -171,7 +171,7 @@ void openlcb_produce_event(event_id_t event_id) {
     if (event_id == 0) return;
     
     OpenLcbApplication_send_event_pc_report(local_node, event_id);
-    ESP_LOGI(TAG, "Sent PCER for EventID: 0x%016llX", (unsigned long long)event_id);
+    ESP_LOGD(TAG, "Sent PCER for EventID: 0x%016llX", (unsigned long long)event_id);
 }
 
 event_id_t lcc_parse_event_id(const char *str) {

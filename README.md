@@ -1,4 +1,4 @@
-# ESP32 Lever Frame v1.3.1
+# ESP32 Lever Frame v1.3.2
 
 An ESP32-based application specifically designed for the **Waveshare ESP32-S3-Touch-LCD-4.3** device to control and manage a wireless virtual lever frame. This project features full OpenLCB / LCC (Layout Command Control) integration over Wi-Fi, allowing for two-way event parsing and dynamic lever state updates, making it ideal for model railway control systems.
 
@@ -27,10 +27,15 @@ An ESP32-based application specifically designed for the **Waveshare ESP32-S3-To
 To bridge the wireless Wi-Fi LCC events from this device to a physical CAN-based layout, a **Wi-Fi to CAN LCC bridge** is required. The most common and recommended approach is to use JMRI.
 
 ### Bridging with JMRI (LCC Hub)
-Assuming you have your USB-to-CAN adapter configured and working in JMRI:
-1. In the main JMRI window (PanelPro or DecoderPro), go to the **LCC** menu (or **OpenLCB** depending on your connection prefix).
-2. Click on **Start Hub** (or "LCC Hub"). This starts a GridConnect TCP server (usually on TCP port 12021) that bridges the network to your CAN bus.
-3. In the Lever Frame's Web Configuration Interface, ensure the Wi-Fi is connected to the same network as the JMRI computer.
+To seamlessly pass events between this Wi-Fi Lever Frame and your physical CAN-based LCC network, you can use JMRI's built-in "Hub" feature.
+
+1. **Hardware Setup:** Ensure your physical CAN network is connected to your computer (e.g., via a USB-to-CAN adapter like a GridConnect CAN-USB or LCC Buffer) and that it is configured and working within JMRI Preferences.
+2. **Start the Hub:** In the main JMRI window (PanelPro or DecoderPro), click the **LCC** menu (or **OpenLCB** depending on your connection prefix) and select **Start Hub**. This starts a GridConnect TCP server that listens on port `12021` and bridges it to the physical CAN bus.
+3. **Configure Firewall:** You must allow incoming TCP traffic on port `12021`. 
+   * *Windows:* Open Windows Defender Firewall, go to Advanced Settings, and create an Inbound Rule allowing TCP port `12021`, OR ensure `Java(TM) Platform SE binary` is allowed on Private networks.
+   * *Linux (firewalld):* Run `sudo firewall-cmd --zone=public --permanent --add-port=12021/tcp` (change the zone to match your Wi-Fi interface if necessary) followed by `sudo firewall-cmd --reload`.
+4. **Configure Lever Frame:** Open the Lever Frame's Web Configuration Interface. Enter the IP address of the computer running JMRI into the **JMRI OpenLCB Hub IP Address** field.
+5. **Connect:** Click **Save & Restart**. The Lever Frame will boot up, connect to your Wi-Fi, and act as a TCP client to automatically bridge all traffic to JMRI.
 
 ## Getting Started
 

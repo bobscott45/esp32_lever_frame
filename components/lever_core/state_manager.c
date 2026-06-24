@@ -81,7 +81,7 @@ void state_manager_save(uint32_t current_config_hash) {
             nvs_set_blob(my_handle, "lever_st_v2", states, bytes_needed);
             nvs_commit(my_handle);
             nvs_close(my_handle);
-            ESP_LOGI(TAG, "Lever state automatically saved to NVS.");
+            ESP_LOGD(TAG, "Lever state automatically saved to NVS.");
         }
     }
     

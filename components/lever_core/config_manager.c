@@ -85,7 +85,8 @@ static const lever_system_config_t default_config = {
     .lcc_enabled = true,
     .wifi_ssid = "ZENBQ16",
     .wifi_password = "signalman",
-    .wifi_station_password = "Juniper#1945"
+    .wifi_station_password = "Juniper#1945",
+    .jmri_ip_address = ""
 };
 
 // Currently active dynamic configuration
@@ -178,6 +179,9 @@ static void free_dynamic_config(lever_system_config_t *config) {
     }
     if (config->wifi_station_password) {
         free((void *)config->wifi_station_password);
+    }
+    if (config->jmri_ip_address) {
+        free((void *)config->jmri_ip_address);
     }
     memset(config, 0, sizeof(lever_system_config_t));
 }
@@ -346,6 +350,13 @@ static esp_err_t parse_json_to_config(const char *json_str, lever_system_config_
         out_config->wifi_station_password = strdup(wifi_sta_pw_obj->valuestring);
     } else {
         out_config->wifi_station_password = NULL;
+    }
+
+    cJSON *jmri_ip_obj = cJSON_GetObjectItem(root, "jmri_ip_address");
+    if (jmri_ip_obj && cJSON_IsString(jmri_ip_obj)) {
+        out_config->jmri_ip_address = strdup(jmri_ip_obj->valuestring);
+    } else {
+        out_config->jmri_ip_address = NULL;
     }
     
     cJSON *restore_obj = cJSON_GetObjectItem(root, "restore_last_state");
@@ -570,6 +581,12 @@ char *config_manager_get_json_str(void) {
         cJSON_AddStringToObject(root, "wifi_station_password", curr->wifi_station_password);
     } else {
         cJSON_AddStringToObject(root, "wifi_station_password", "Juniper#1945"); // Default fallback
+    }
+
+    if (curr->jmri_ip_address) {
+        cJSON_AddStringToObject(root, "jmri_ip_address", curr->jmri_ip_address);
+    } else {
+        cJSON_AddStringToObject(root, "jmri_ip_address", "");
     }
     
     cJSON_AddBoolToObject(root, "restore_last_state", curr->restore_last_state);

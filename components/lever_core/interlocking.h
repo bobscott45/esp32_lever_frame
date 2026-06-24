@@ -81,6 +81,7 @@ typedef struct {
     bool restore_last_state;
     interlocking_conflict_policy_t conflict_policy;
     bool lcc_enabled;
+    const char *jmri_ip_address;
 } lever_system_config_t;
 
 /**

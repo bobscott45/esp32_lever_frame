@@ -34,8 +34,10 @@
 #include "can_drivers.h"
 
 #include "lwip/sockets.h"
+#include <arpa/inet.h>
 #include "openlcb/openlcb_gridconnect.h"
 #include "openlcb/openlcb_node.h"
+#include "config_manager.h"
 
 
 #define WIFI_CONNECTED_BIT BIT0
@@ -60,77 +62,102 @@ int active_tcp_socket = -1;
  *
  * @param[in]  pvParameters   Task parameters provided by FreeRTOS during creation.
  */
-static void tcp_server_task(void *pvParameters) {
-    ESP_LOGI("TCP_Server", "Waiting for WiFi connection before starting GridConnect server...");
+static void tcp_task(void *pvParameters) {
+    ESP_LOGI("TCP_Task", "Waiting for WiFi connection before starting GridConnect...");
     if (wifi_event_group) {
         xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_BIT, pdFALSE, pdTRUE, portMAX_DELAY);
     } else {
-        ESP_LOGW("TCP_Server", "wifi_event_group is NULL. TCP server may not have a connection.");
+        ESP_LOGW("TCP_Task", "wifi_event_group is NULL. TCP task may not have a connection.");
     }
-    ESP_LOGI("TCP_Server", "WiFi Connected! Starting OpenLCB Hub...");
+
+    const lever_system_config_t *curr_config = config_manager_get_current();
+    bool is_client = (curr_config->jmri_ip_address && strlen(curr_config->jmri_ip_address) > 0);
+
+    if (is_client) {
+        ESP_LOGI("TCP_Task", "WiFi Connected! Starting OpenLCB Client connecting to JMRI Hub at %s:12021", curr_config->jmri_ip_address);
+    } else {
+        ESP_LOGI("TCP_Task", "WiFi Connected! Starting OpenLCB Hub (Server) on port 12021");
+    }
 
     char rx_buffer[256];
-    struct sockaddr_in dest_addr = {
-        .sin_addr.s_addr = htonl(INADDR_ANY),
-        .sin_family = AF_INET,
-        .sin_port = htons(12021) // Standard OpenLCB/GridConnect Port
-    };
 
     while (1) {
-        int listen_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
-        
-        int opt = 1;
-        setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-        
-        bind(listen_sock, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
-        listen(listen_sock, 1);
+        int sock = -1;
 
-        ESP_LOGI("TCP_Server", "Listening for OpenLCB traffic on port 12021");
+        if (is_client) {
+            struct sockaddr_in dest_addr = {
+                .sin_family = AF_INET,
+                .sin_port = htons(12021)
+            };
+            dest_addr.sin_addr.s_addr = inet_addr(curr_config->jmri_ip_address);
 
-        struct sockaddr_storage source_addr;
-        socklen_t addr_len = sizeof(source_addr);
-        
-        // Block until an OpenLCB client (like JMRI) connects
-        int sock = accept(listen_sock, (struct sockaddr *)&source_addr, &addr_len);
+            sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+            if (sock < 0) {
+                ESP_LOGE("TCP_Task", "Unable to create socket");
+                vTaskDelay(pdMS_TO_TICKS(5000));
+                continue;
+            }
+
+            int err = connect(sock, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
+            if (err != 0) {
+                ESP_LOGE("TCP_Task", "Socket unable to connect to %s:12021, retrying in 5s...", curr_config->jmri_ip_address);
+                close(sock);
+                vTaskDelay(pdMS_TO_TICKS(5000));
+                continue;
+            }
+            ESP_LOGI("TCP_Task", "Connected to JMRI Hub!");
+        } else {
+            struct sockaddr_in dest_addr = {
+                .sin_addr.s_addr = htonl(INADDR_ANY),
+                .sin_family = AF_INET,
+                .sin_port = htons(12021)
+            };
+            int listen_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
+            int opt = 1;
+            setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+            bind(listen_sock, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
+            listen(listen_sock, 1);
+
+            ESP_LOGI("TCP_Task", "Listening for OpenLCB traffic on port 12021");
+
+            struct sockaddr_storage source_addr;
+            socklen_t addr_len = sizeof(source_addr);
+            sock = accept(listen_sock, (struct sockaddr *)&source_addr, &addr_len);
+            close(listen_sock);
+
+            if (sock >= 0) {
+                ESP_LOGI("TCP_Task", "OpenLCB Client Connected!");
+            }
+        }
+
         if (sock >= 0) {
-            ESP_LOGI("TCP_Server", "OpenLCB Client Connected!");
-            // Store the socket so TcpDriver_transmit can use it
             active_tcp_socket = sock; 
             gridconnect_buffer_t gc_buffer;
             can_msg_t can_msg;
-            // Receive loop
+
             while (1) {
                 int len = recv(sock, rx_buffer, sizeof(rx_buffer), 0);
                 if (len <= 0) {
-                    ESP_LOGI("TCP_Server", "Client disconnected");
-                    break; // Break out to wait for a new connection
+                    ESP_LOGI("TCP_Task", "%s", is_client ? "Disconnected from JMRI Hub" : "Client disconnected");
+                    break;
                 }
-                // Process the TCP stream byte-by-byte
                 for (int i = 0; i < len; i++) {
-                    // Feed one character. Returns true the moment it hits ';'
                     bool valid = OpenLcbGridConnect_copy_out_gridconnect_when_done(rx_buffer[i], &gc_buffer);
-
                     if (valid) {
-                        // A complete message was JUST formed. Process it immediately!
-                        // ESP_LOGI("TCP_RX", "Parsed GC String: %s", (char*)&gc_buffer);
-
                         OpenLcbGridConnect_to_can_msg(&gc_buffer, &can_msg);
-                        // ESP_LOGI("TCP_RX", "Converted to CAN ID: %lu, Len: %lu", can_msg.identifier, can_msg.payload_count);
-
-                        // Push to OpenLCB engine
-                        //Forward to CAN bus
                         can_driver_transmit_physical(&can_msg);
-                        //Push to local OpenLCB engine
                         CanRxStatemachine_incoming_can_driver_callback(&can_msg);
                     }
                 }
             }
             
-            // Clean up when the client drops
             active_tcp_socket = -1;
             close(sock);
+            
+            if (is_client) {
+                vTaskDelay(pdMS_TO_TICKS(3000)); // Delay before reconnecting
+            }
         }
-        close(listen_sock);
     }
 }
 
@@ -142,6 +169,6 @@ static void tcp_server_task(void *pvParameters) {
 void tcp_driver_initialize(void) {
     ESP_LOGI(TAG, "Initializing TCP/IP driver");
     
-    // Start the raw TCP server task instead of start_http_server(). It will wait for WiFi internally.
-    xTaskCreatePinnedToCore(tcp_server_task, "openlcb_tcp", 4096, NULL, 5, NULL, 0);
+    // Start the raw TCP task instead of start_http_server(). It will wait for WiFi internally.
+    xTaskCreatePinnedToCore(tcp_task, "openlcb_tcp", 4096, NULL, 5, NULL, 0);
 }
