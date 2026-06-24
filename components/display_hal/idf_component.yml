@@ -2,4 +2,7 @@ version: "1.0.0"
 dependencies:
   idf:
     version: '>=5.0.0'
-  bobscott45/waveshare_esp32_s3_touch_lcd_4_3: '*'
+  esp32_p4_wifi6_touch_lcd_4_3:
+    version: '*'
+    rules:
+      - if: "idf_target == 'esp32p4'"

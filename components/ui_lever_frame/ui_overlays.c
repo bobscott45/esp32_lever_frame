@@ -53,7 +53,7 @@ static void remote_config_timeout_cb(lv_timer_t *timer) {
 }
 
 void ui_show_remote_config_overlay(void) {
-    if (ui_port_lock(0)) {
+    if (ui_port_lock(100)) {
         if (!remote_config_overlay) {
             remote_config_overlay = lv_obj_create(lv_scr_act());
             lv_obj_set_size(remote_config_overlay, LV_PCT(100), LV_PCT(100));

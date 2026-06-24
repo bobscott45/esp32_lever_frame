@@ -1,14 +1,13 @@
 # ESP32 Lever Frame v1.3.2
 
-An ESP32-based application specifically designed for the **Waveshare ESP32-S3-Touch-LCD-4.3** device to control and manage a wireless virtual lever frame. This project features full OpenLCB / LCC (Layout Command Control) integration over Wi-Fi, allowing for two-way event parsing and dynamic lever state updates, making it ideal for model railway control systems.
+An ESP32-based application specifically designed for the **Waveshare ESP32-P4-WIFI6-Touch-LCD-4.3** device to control and manage a wireless virtual lever frame. This project features full OpenLCB / LCC (Layout Command Control) integration over Wi-Fi, allowing for two-way event parsing and dynamic lever state updates, making it ideal for model railway control systems.
 
-> **Project Status:** This software is fully functional in simulation and successfully parses LCC events via a JMRI hub. However, two-way integration on a physical, hardware-based layout is currently in the testing phase. Feedback and bug reports from users with physical LCC layouts are highly encouraged!
+> **Project Status:** This software is fully functional and has been successfully tested with physical LCC hardware (such as LCC Servo Nodes) via a JMRI hub. Two-way integration on a physical, hardware-based layout operates as expected.
 
 
 ## Hardware Requirements
 
-* **Waveshare ESP32-S3-Touch-LCD-4.3** display module (Part Number/SKU: **25948**).
-  * **IMPORTANT:** This project is specifically designed for the *original* standard version of this display. It is **NOT** compatible with the "B" (ESP32-S3-Touch-LCD-4.3B) or "C" (ESP32-S3-Touch-LCD-4.3C) variants due to differences in their hardware and interface configurations.
+* **Waveshare ESP32-P4-WIFI6-Touch-LCD-4.3** display module.
 
 ## Key Features
 
@@ -48,7 +47,11 @@ This project is built using the ESP-IDF framework (v6 compatible).
 2. Configure your ESP-IDF environment.
 3. Build, flash, and monitor the project using standard ESP-IDF commands:
    ```bash
-   idf.py build flash monitor
+   idf.py build
+   ```
+4. Flash the built firmware using `esptool.py` (ensure you replace `/dev/ttyACM0` with your actual device port):
+   ```bash
+   python -m esptool --chip esp32p4 -p /dev/ttyACM0 -b 460800 --before=default-reset --after=hard-reset write-flash --flash-mode dio --flash-freq 80m --flash-size 16MB 0x2000 build/bootloader/bootloader.bin 0x8000 build/partition_table/partition-table.bin 0x10000 build/esp32-lever-frame.bin
    ```
 
 ## Running Tests
@@ -165,7 +168,7 @@ To observe the interlocking rules in action, try the following sequences in the 
 
 ## Known Issues
 
-*   **Screen Glitches**: The ESP32-S3 hardware is pushing its limits to render this complex, high-resolution LVGL interface. Very occasionally, you may notice that parts of the screen do not paint correctly or appear slightly glitched. You can resolve this by forcing a complete repaint—the easiest way is to tap any lever's label to open its settings menu, and then immediately tap outside the menu to dismiss it.
+*   **Screen Glitches**: While the ESP32-P4 is significantly more powerful, rendering this complex, high-resolution LVGL interface can still occasionally cause minor visual artifacts if the UI is updated rapidly. You can resolve this by forcing a complete repaint—the easiest way is to tap any lever's label to open its settings menu, and then immediately tap outside the menu to dismiss it.
 
 ## License
 

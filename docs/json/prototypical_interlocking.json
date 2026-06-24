@@ -1,7 +1,7 @@
 {
-  "wifi_ssid": "ZENBQ16",
+  "wifi_ssid": "",
   "wifi_password": "signalman",
-  "wifi_station_password": "Juniper#1945",
+  "wifi_station_password": "",
   "conflict_policy": 0,
   "restore_last_state": true,
   "tabs": [

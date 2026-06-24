@@ -30,6 +30,7 @@
 #include "nvs_flash.h"
 #include "nvs.h"
 #include "esp_log.h"
+#include "default_prototypical_config.h"
 #include "cJSON.h"
 #include "system_events.h"
 
@@ -83,9 +84,9 @@ static const lever_system_config_t default_config = {
     .restore_last_state = true,
     .conflict_policy = INTERLOCK_POLICY_STRICT_LOCAL,
     .lcc_enabled = true,
-    .wifi_ssid = "ZENBQ16",
+    .wifi_ssid = "",
     .wifi_password = "signalman",
-    .wifi_station_password = "Juniper#1945",
+    .wifi_station_password = "",
     .jmri_ip_address = ""
 };
 
@@ -391,6 +392,16 @@ cleanup_error:
     return ESP_ERR_NO_MEM;
 }
 
+static lever_system_config_t pending_free_config = {0};
+static bool has_pending_free = false;
+
+void config_manager_free_pending(void) {
+    if (has_pending_free) {
+        free_dynamic_config(&pending_free_config);
+        has_pending_free = false;
+    }
+}
+
 esp_err_t config_manager_init(void) {
     // Initialize NVS
     esp_err_t err = nvs_flash_init();
@@ -404,7 +415,22 @@ esp_err_t config_manager_init(void) {
     nvs_handle_t my_handle;
     err = nvs_open("storage", NVS_READONLY, &my_handle);
     if (err == ESP_ERR_NVS_NOT_FOUND) {
-        ESP_LOGI(TAG, "No NVS partition found. Using default compile-time config.");
+        ESP_LOGI(TAG, "No 'storage' namespace found in NVS. Using prototypical config.");
+        
+        lever_system_config_t new_config = {0};
+        esp_err_t parse_err = parse_json_to_config(default_prototypical_config_json, &new_config);
+        if (parse_err == ESP_OK) {
+            config_manager_free_pending();
+            if (is_using_dynamic) {
+                pending_free_config = active_dynamic_config;
+                has_pending_free = true;
+            }
+            active_dynamic_config = new_config;
+            active_config_hash = hash_json_string(default_prototypical_config_json);
+            is_using_dynamic = true;
+        } else {
+            ESP_LOGE(TAG, "Failed to parse default prototypical config. Falling back to compile-time default.");
+        }
         return ESP_OK;
     } else if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error opening NVS handle: %s", esp_err_to_name(err));
@@ -414,8 +440,23 @@ esp_err_t config_manager_init(void) {
     size_t required_size = 0;
     err = nvs_get_blob(my_handle, "config_json", NULL, &required_size);
     if (err == ESP_ERR_NVS_NOT_FOUND) {
-        ESP_LOGI(TAG, "No config_json found in NVS. Using default compile-time config.");
+        ESP_LOGI(TAG, "No config_json found in NVS. Using prototypical config.");
         nvs_close(my_handle);
+        
+        lever_system_config_t new_config = {0};
+        esp_err_t parse_err = parse_json_to_config(default_prototypical_config_json, &new_config);
+        if (parse_err == ESP_OK) {
+            config_manager_free_pending();
+            if (is_using_dynamic) {
+                pending_free_config = active_dynamic_config;
+                has_pending_free = true;
+            }
+            active_dynamic_config = new_config;
+            active_config_hash = hash_json_string(default_prototypical_config_json);
+            is_using_dynamic = true;
+        } else {
+            ESP_LOGE(TAG, "Failed to parse default prototypical config. Falling back to compile-time default.");
+        }
         return ESP_OK;
     } else if (err != ESP_OK) {
         ESP_LOGE(TAG, "Error getting config_json size from NVS: %s", esp_err_to_name(err));
@@ -472,15 +513,7 @@ const lever_system_config_t *config_manager_get_current(void) {
     return &default_config;
 }
 
-static lever_system_config_t pending_free_config = {0};
-static bool has_pending_free = false;
 
-void config_manager_free_pending(void) {
-    if (has_pending_free) {
-        free_dynamic_config(&pending_free_config);
-        has_pending_free = false;
-    }
-}
 
 esp_err_t config_manager_save_json_internal(const char *json_str, bool notify) {
     lever_system_config_t new_config = {0};
@@ -574,13 +607,13 @@ char *config_manager_get_json_str(void) {
     if (curr->wifi_ssid) {
         cJSON_AddStringToObject(root, "wifi_ssid", curr->wifi_ssid);
     } else {
-        cJSON_AddStringToObject(root, "wifi_ssid", "ZENBQ16"); // Default fallback
+        cJSON_AddStringToObject(root, "wifi_ssid", ""); // Default fallback
     }
 
     if (curr->wifi_station_password) {
         cJSON_AddStringToObject(root, "wifi_station_password", curr->wifi_station_password);
     } else {
-        cJSON_AddStringToObject(root, "wifi_station_password", "Juniper#1945"); // Default fallback
+        cJSON_AddStringToObject(root, "wifi_station_password", ""); // Default fallback
     }
 
     if (curr->jmri_ip_address) {

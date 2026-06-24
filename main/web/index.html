@@ -865,8 +865,8 @@
             }, 100);
 
             document.getElementById('wifi-password-input').value = configData.wifi_password || 'signalman';
-            document.getElementById('wifi-ssid-input').value = configData.wifi_ssid || 'ZENBQ16';
-            document.getElementById('wifi-sta-password-input').value = configData.wifi_station_password || 'Juniper#1945';
+            document.getElementById('wifi-ssid-input').value = configData.wifi_ssid || '';
+            document.getElementById('wifi-sta-password-input').value = configData.wifi_station_password || '';
             
             const jmriIpInput = document.getElementById('jmri-ip-input');
             if (jmriIpInput) {

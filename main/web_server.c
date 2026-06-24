@@ -46,8 +46,12 @@ static TimerHandle_t wifi_retry_timer = NULL;
  * @param[in]  xTimer   Handle of the expired timer.
  */
 static void wifi_retry_timer_cb(TimerHandle_t xTimer) {
-    ESP_LOGI("WebServer", "Retrying WiFi connection...");
-    esp_wifi_connect();
+    wifi_config_t conf;
+    esp_wifi_get_config(WIFI_IF_STA, &conf);
+    if (strlen((char *)conf.sta.ssid) > 0) {
+        ESP_LOGI("WebServer", "Retrying WiFi connection...");
+        esp_wifi_connect();
+    }
 }
 
 static const char *TAG = "WebServer";
@@ -71,7 +75,13 @@ EventGroupHandle_t wifi_event_group;
 static void wifi_event_handler(void* arg, esp_event_base_t event_base,
                           int32_t event_id, void* event_data) {
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
-        esp_wifi_connect();
+        wifi_config_t conf;
+        esp_wifi_get_config(WIFI_IF_STA, &conf);
+        if (strlen((char *)conf.sta.ssid) > 0) {
+            esp_wifi_connect();
+        } else {
+            ESP_LOGI(TAG, "No STA SSID configured, skipping connect");
+        }
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
         wifi_event_sta_disconnected_t* event = (wifi_event_sta_disconnected_t*) event_data;
         ESP_LOGE(TAG, "WiFi Disconnected! Reason code: %d. Retrying in 5 seconds...", event->reason);
@@ -386,19 +396,33 @@ esp_err_t web_server_start(void) {
     esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, wifi_event_handler, NULL, NULL);
     esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, wifi_event_handler, NULL, NULL);
 
+#ifndef CONFIG_ESP_WIFI_ESPNOW_MAX_ENCRYPT_NUM
+#define CONFIG_ESP_WIFI_ESPNOW_MAX_ENCRYPT_NUM 0
+#define CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM 10
+#define CONFIG_ESP_WIFI_DYNAMIC_RX_BUFFER_NUM 32
+#define CONFIG_ESP_WIFI_TX_BUFFER_TYPE 1
+#define CONFIG_ESP_WIFI_DYNAMIC_RX_MGMT_BUF 1
+#define CONFIG_ESP_WIFI_TX_BA_WIN 6
+#define CONFIG_ESP_WIFI_RX_BA_WIN 6
+#define CONFIG_ESP_WIFI_MGMT_SBUF_NUM 32
+#define CONFIG_ESP_WIFI_RX_MGMT_BUF_NUM 32
+#define CONFIG_ESP_WIFI_CACHE_TX_BUFFER_NUM 32
+#define CONFIG_ESP_WIFI_AMSDU_TX_ENABLED 0
+#endif
+
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
     const lever_system_config_t *curr_config = config_manager_get_current();
     const char *ap_password = (curr_config && curr_config->wifi_password && strlen(curr_config->wifi_password) >= 8) ? curr_config->wifi_password : "signalman";
-    const char *sta_ssid = (curr_config && curr_config->wifi_ssid) ? curr_config->wifi_ssid : "ZENBQ16";
-    const char *sta_password = (curr_config && curr_config->wifi_station_password) ? curr_config->wifi_station_password : "Juniper#1945";
+    const char *sta_ssid = (curr_config && curr_config->wifi_ssid) ? curr_config->wifi_ssid : "";
+    const char *sta_password = (curr_config && curr_config->wifi_station_password) ? curr_config->wifi_station_password : "";
 
     wifi_config_t wifi_config_ap = {
         .ap = {
             .ssid = "Lever-Frame-Config",
             .ssid_len = strlen("Lever-Frame-Config"),
-            .channel = 6, // Channel 6 is often less congested and faster to be listed
+            .channel = 1,
             .max_connection = 4,
             .authmode = WIFI_AUTH_WPA_WPA2_PSK,
             .pmf_cfg = {
@@ -410,7 +434,7 @@ esp_err_t web_server_start(void) {
 
     wifi_config_t wifi_config_sta = {
         .sta = {
-            .threshold.authmode = WIFI_AUTH_WPA2_PSK,
+            .threshold.authmode = WIFI_AUTH_OPEN,
             .sae_pwe_h2e = WPA3_SAE_PWE_BOTH,
             .pmf_cfg = {
                 .capable = true,
