@@ -1,13 +1,18 @@
-# ESP32 Lever Frame v1.3.2
+# ESP32 Lever Frame v1.4.0
 
-An ESP32-based application specifically designed for the **Waveshare ESP32-P4-WIFI6-Touch-LCD-4.3** device to control and manage a wireless virtual lever frame. This project features full OpenLCB / LCC (Layout Command Control) integration over Wi-Fi, allowing for two-way event parsing and dynamic lever state updates, making it ideal for model railway control systems.
+An ESP32-based application specifically designed for the **Waveshare ESP32-S3-Touch-LCD-4.3** and **Waveshare ESP32-P4-WIFI6-Touch-LCD-4.3** devices to control and manage a wireless virtual lever frame. This project features full OpenLCB / LCC (Layout Command Control) integration over Wi-Fi, allowing for two-way event parsing and dynamic lever state updates, making it ideal for model railway control systems.
 
 > **Project Status:** This software is fully functional and has been successfully tested with physical LCC hardware (such as LCC Servo Nodes) via a JMRI hub. Two-way integration on a physical, hardware-based layout operates as expected.
 
 
 ## Hardware Requirements
 
+This project supports the following display modules:
+* **Waveshare ESP32-S3-Touch-LCD-4.3** (Part Number/SKU: **25948**).
+  * **IMPORTANT:** For the S3, this project is specifically designed for the *original* standard version of this display. It is **NOT** compatible with the "B" (ESP32-S3-Touch-LCD-4.3B) or "C" (ESP32-S3-Touch-LCD-4.3C) variants due to differences in their hardware and interface configurations.
+  * **Note:** The S3 works well and has better battery life, but due to hardware limits, it may occasionally exhibit minor glitches in the form of momentary lines on the display.
 * **Waveshare ESP32-P4-WIFI6-Touch-LCD-4.3** display module.
+  * **Note:** The P4 offers a cleaner, snappier display with absolutely no UI tearing, but it comes at the cost of shorter battery life compared to the S3.
 
 ## Key Features
 
@@ -45,14 +50,19 @@ This project is built using the ESP-IDF framework (v6 compatible).
    git clone --recursive <repository-url>
    ```
 2. Configure your ESP-IDF environment.
-3. Build, flash, and monitor the project using standard ESP-IDF commands:
+3. Build the project using standard ESP-IDF commands:
    ```bash
    idf.py build
    ```
-4. Flash the built firmware using `esptool.py` (ensure you replace `/dev/ttyACM0` with your actual device port):
-   ```bash
-   python -m esptool --chip esp32p4 -p /dev/ttyACM0 -b 460800 --before=default-reset --after=hard-reset write-flash --flash-mode dio --flash-freq 80m --flash-size 16MB 0x2000 build/bootloader/bootloader.bin 0x8000 build/partition_table/partition-table.bin 0x10000 build/esp32-lever-frame.bin
-   ```
+4. Flash the built firmware:
+   * **For ESP32-S3:**
+     ```bash
+     idf.py flash monitor
+     ```
+   * **For ESP32-P4:** Flash using `esptool.py` (ensure you replace `/dev/ttyACM0` with your actual device port):
+     ```bash
+     python -m esptool --chip esp32p4 -p /dev/ttyACM0 -b 460800 --before=default-reset --after=hard-reset write-flash --flash-mode dio --flash-freq 80m --flash-size 16MB 0x2000 build/bootloader/bootloader.bin 0x8000 build/partition_table/partition-table.bin 0x10000 build/esp32-lever-frame.bin
+     ```
 
 ## Running Tests
 
@@ -168,7 +178,7 @@ To observe the interlocking rules in action, try the following sequences in the 
 
 ## Known Issues
 
-*   **Screen Glitches**: While the ESP32-P4 is significantly more powerful, rendering this complex, high-resolution LVGL interface can still occasionally cause minor visual artifacts if the UI is updated rapidly. You can resolve this by forcing a complete repaint—the easiest way is to tap any lever's label to open its settings menu, and then immediately tap outside the menu to dismiss it.
+*   **ESP32-S3 Screen Glitches**: The ESP32-S3 hardware is pushing its limits to render this complex, high-resolution LVGL interface. Very occasionally, you may notice momentary lines or minor visual glitches if the UI is updated rapidly. You can resolve this by forcing a complete repaint—the easiest way is to tap any lever's label to open its settings menu, and then immediately tap outside the menu to dismiss it.
 
 ## License
 
