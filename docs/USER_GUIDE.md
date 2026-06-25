@@ -68,6 +68,7 @@ These settings govern the physical device's operation and network connectivity.
 *   **Wi-Fi Network Name (SSID) & Password:** Allows the ESP32 to connect to a local Wi-Fi network. This is required for the device to communicate with a JMRI LCC Hub over the network.
 *   **AP Password:** The password used when connecting directly to the device's built-in "Lever-Frame-Config" Access Point.
 *   **Global LCC Publishing:** A master toggle switch for Layout Command Control (OpenLCB) network events. Unchecking this prevents the device from sending any layout control messages, effectively putting it in an "offline" or "simulator-only" mode.
+*   **Display Sleep Timer:** Configures an inactivity timeout (e.g., 30s, 1m, 5m) after which the screen will go blank to conserve power and reduce heat. The screen wakes up instantly upon being touched.
 *   *(The Startup Mode and Network Override Policy can also be set here and synchronize with the on-device settings).*
 
 ### Frame (Tab) Management
