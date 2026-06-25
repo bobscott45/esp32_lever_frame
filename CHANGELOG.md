@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Implemented configurable Display Sleep mode to reduce power consumption. The timeout can be configured via the Web UI (Never, 30s, 1m, 5m). Waking the display is instantaneous upon touch.
+- Added a `Kconfig.projbuild` Wi-Fi credentials fallback option in `menuconfig` for rapid development and automatic connection when NVS memory is wiped.
+
+### Changed
+- Refactored OpenLCB network configuration to permanently enforce GridConnect TCP over Wi-Fi, removing unnecessary CAN-specific compilation flags.
+
+### Fixed
+- Fixed a FreeRTOS concurrency issue (race condition) by properly wrapping the LCC event generation from the UI/Event loop with `lcc_drivers_lock_shared_resources()`.
 
 ## [1.5.0] - 2026-06-25
 
