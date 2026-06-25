@@ -50,11 +50,24 @@ This project is built using the ESP-IDF framework (v6 compatible).
    git clone --recursive <repository-url>
    ```
 2. Configure your ESP-IDF environment.
-3. Build the project using standard ESP-IDF commands:
+3. Select your hardware target and configure the board:
+   * **For ESP32-S3:**
+     ```bash
+     idf.py set-target esp32s3
+     idf.py menuconfig
+     ```
+     *(Navigate to **Component config -> Hardware Display Selection** and select the S3 board).*
+   * **For ESP32-P4:**
+     ```bash
+     idf.py set-target esp32p4
+     idf.py menuconfig
+     ```
+     *(Navigate to **Component config -> Hardware Display Selection** and select the P4 board).*
+4. Build the project:
    ```bash
    idf.py build
    ```
-4. Flash the built firmware:
+5. Flash the built firmware:
    * **For ESP32-S3:**
      ```bash
      idf.py flash monitor

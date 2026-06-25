@@ -54,15 +54,16 @@ The entry point of the application. It ties all the components together.
 
 ## Adding a New Display
 
-Because the UI component (`ui_lever_frame`) is decoupled from the hardware, adding a new display requires zero changes to the UI code. The physical display is initialized entirely in `main.c`.
+Because the UI component (`ui_lever_frame`) is decoupled from the hardware, adding a new display requires zero changes to the UI code. The physical display is abstracted via the `display_hal` component.
 
-To add support for a new display (e.g., swapping to a P4 screen), follow these steps:
+To add support for a new physical display:
 
 ### 1. Update `display_hal` Component
-The `display_hal` component is the central abstraction layer for your physical screen. To swap displays:
-- Update `components/display_hal/idf_component.yml` to require your new display's Board Support Package (BSP).
-- Update `components/display_hal/CMakeLists.txt` to `REQUIRES` the new BSP.
-- Rewrite `components/display_hal/display_hal.c` to use your new BSP's initialization sequence.
+The `display_hal` component is the central abstraction layer for your physical screen. To add a new board:
+- Add your new display's Board Support Package (BSP) to the workspace or `idf_component.yml`.
+- Update `components/display_hal/Kconfig` to add a new `config` entry for your board under the `HARDWARE_BOARD` choice.
+- Update `components/display_hal/CMakeLists.txt` to require the new BSP component when your Kconfig option is selected.
+- Update `components/display_hal/display_hal.c` with an `#elif defined(CONFIG_HARDWARE_BOARD_YOUR_NEW_BOARD)` block implementing the new BSP's initialization sequence.
 
 You must implement the three functions exposed by `display_hal.h`:
 ```c

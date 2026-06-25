@@ -5,4 +5,8 @@ dependencies:
   esp32_p4_wifi6_touch_lcd_4_3:
     version: '*'
     rules:
-      - if: "idf_target == 'esp32p4'"
+      - if: "target == esp32p4"
+  bobscott45/waveshare_esp32_s3_touch_lcd_4_3:
+    version: '*'
+    rules:
+      - if: "target == esp32s3"

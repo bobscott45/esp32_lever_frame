@@ -27,7 +27,7 @@
 #include "sdkconfig.h"
 #include "esp_log.h"
 
-#ifdef CONFIG_IDF_TARGET_ESP32P4
+#ifdef CONFIG_HARDWARE_BOARD_WAVESHARE_P4
 #include "bsp/esp32_p4_wifi6_touch_lcd_4_3.h"
 #include "esp_lv_adapter.h"
 

@@ -16,7 +16,5 @@ description: Based on ESP32-P4 chip, waveshare electronics designed a 4.3-inch s
 repository: git://github.com/WaveshareCloud/Waveshare-ESP32-components.git
 tags:
 - bsp
-targets:
-- esp32p4
 url: https://www.waveshare.com/esp32-p4-wifi6-touch-lcd-4.3.htm
 version: 1.0.1

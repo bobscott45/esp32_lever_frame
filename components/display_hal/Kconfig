@@ -1,0 +1,25 @@
+menu "Hardware Display Selection"
+
+    choice HARDWARE_BOARD
+        prompt "Select Hardware Board"
+        default HARDWARE_BOARD_WAVESHARE_S3 if IDF_TARGET_ESP32S3
+        default HARDWARE_BOARD_WAVESHARE_P4 if IDF_TARGET_ESP32P4
+        default HARDWARE_BOARD_WAVESHARE_S3
+
+        config HARDWARE_BOARD_WAVESHARE_S3
+            bool "Waveshare ESP32-S3 Touch LCD 4.3"
+            depends on IDF_TARGET_ESP32S3
+            help
+                Selects the original Waveshare ESP32-S3 Touch LCD 4.3 board.
+                Note: This requires setting the target to esp32s3 first.
+
+        config HARDWARE_BOARD_WAVESHARE_P4
+            bool "Waveshare ESP32-P4 WIFI6 Touch LCD 4.3"
+            depends on IDF_TARGET_ESP32P4
+            help
+                Selects the Waveshare ESP32-P4 WIFI6 Touch LCD 4.3 board.
+                Note: This requires setting the target to esp32p4 first.
+
+    endchoice
+
+endmenu
