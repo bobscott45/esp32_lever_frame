@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-06-25
+
+### Added
+- Implemented configurable Display Sleep mode to reduce power consumption. The timeout can be configured via the Web UI (Never, 30s, 1m, 5m). Waking the display is instantaneous upon touch.
+
 ## [1.5.0] - 2026-06-25
 
 ### Added

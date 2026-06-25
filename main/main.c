@@ -88,6 +88,42 @@ static void on_controller_state_changed(void* handler_args, esp_event_base_t bas
     }
 }
 
+static bool display_is_sleeping = false;
+
+/**
+ * @brief  Callback for the display sleep timer.
+ *
+ * Periodically checks LVGL's inactive time and turns off the backlight if it 
+ * exceeds the configured timeout. Restores the backlight on activity.
+ */
+static void display_sleep_timer_cb(lv_timer_t *timer)
+{
+    const lever_system_config_t *curr_config = config_manager_get_current();
+    if (!curr_config) return;
+    
+    int timeout_ms = curr_config->display_sleep_timeout_ms;
+    if (timeout_ms <= 0) {
+        // Sleep disabled
+        if (display_is_sleeping) {
+            display_hal_backlight_on();
+            display_is_sleeping = false;
+        }
+        return;
+    }
+    
+    uint32_t inactive_time = lv_disp_get_inactive_time(NULL);
+    
+    if (inactive_time > timeout_ms && !display_is_sleeping) {
+        ESP_LOGI(TAG, "Display inactive for %lu ms. Sleeping display.", (unsigned long)inactive_time);
+        display_hal_backlight_off();
+        display_is_sleeping = true;
+    } else if (inactive_time < timeout_ms && display_is_sleeping) {
+        ESP_LOGI(TAG, "Activity detected. Waking display.");
+        display_hal_backlight_on();
+        display_is_sleeping = false;
+    }
+}
+
 static bool ui_rebuild_requested = false;
 
 /**
@@ -231,6 +267,9 @@ void app_main(void)
         
         lv_timer_t *rebuild_timer = lv_timer_create(rebuild_ui_timer_cb, 50, NULL);
         lv_timer_set_repeat_count(rebuild_timer, -1);
+        
+        lv_timer_t *sleep_timer = lv_timer_create(display_sleep_timer_cb, 500, NULL);
+        lv_timer_set_repeat_count(sleep_timer, -1);
         
         const lever_system_config_t *curr_config = config_manager_get_current();
         

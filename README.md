@@ -1,4 +1,4 @@
-# ESP32 Lever Frame v1.5.0
+# ESP32 Lever Frame v1.6.0
 
 An ESP32-based application specifically designed for the **Waveshare ESP32-S3-Touch-LCD-4.3** and **Waveshare ESP32-P4-WIFI6-Touch-LCD-4.3** devices to control and manage a wireless virtual lever frame. This project features full OpenLCB / LCC (Layout Command Control) integration over Wi-Fi, allowing for two-way event parsing and dynamic lever state updates, making it ideal for model railway control systems.
 
@@ -24,6 +24,7 @@ This project supports the following display modules:
 * **High-Performance Touch UI**: A fully custom-built virtual lever frame interface that forms the core of the application, featuring highly optimized memory buffering for smooth, tear-free operation, gesture controls, and a responsive informational drawer.
 * **Prototypical Interlocking Engine**: A C-based interlocking engine that bidirectionally models physical mechanical tappet locking, preventing deadlocks and supporting complex route dependencies like Facing Point Locks (FPLs) and conditional "OR" logic.
 * **Live Web Simulator**: A built-in simulator allows you to preview and debug complex interlocking logic in real-time, matching exactly how the physical frame behaves with permanent locking visuals.
+* **Configurable Display Sleep**: Customizable inactivity timeout to blank the screen and reduce power consumption, with instant touch-to-wake capability.
 * **Interlocking Conflict Policies**: Advanced configuration for LCC events and interlocking rules.
 
 ## Prerequisites

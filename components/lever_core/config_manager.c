@@ -373,6 +373,13 @@ static esp_err_t parse_json_to_config(const char *json_str, lever_system_config_
     } else {
         out_config->conflict_policy = INTERLOCK_POLICY_STRICT_LOCAL;
     }
+
+    cJSON *sleep_obj = cJSON_GetObjectItem(root, "display_sleep_timeout_ms");
+    if (sleep_obj && cJSON_IsNumber(sleep_obj)) {
+        out_config->display_sleep_timeout_ms = sleep_obj->valueint;
+    } else {
+        out_config->display_sleep_timeout_ms = 60000; // 60 seconds default
+    }
     
     cJSON *global_lcc_obj = cJSON_GetObjectItem(root, "lcc_enabled");
     if (global_lcc_obj && cJSON_IsBool(global_lcc_obj)) {
@@ -624,6 +631,7 @@ char *config_manager_get_json_str(void) {
     
     cJSON_AddBoolToObject(root, "restore_last_state", curr->restore_last_state);
     cJSON_AddNumberToObject(root, "conflict_policy", curr->conflict_policy);
+    cJSON_AddNumberToObject(root, "display_sleep_timeout_ms", curr->display_sleep_timeout_ms);
     cJSON_AddBoolToObject(root, "lcc_enabled", curr->lcc_enabled);
     
     cJSON *tabs_arr = cJSON_CreateArray();

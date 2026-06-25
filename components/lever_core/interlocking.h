@@ -80,6 +80,7 @@ typedef struct {
     const char *wifi_station_password;
     bool restore_last_state;
     interlocking_conflict_policy_t conflict_policy;
+    int display_sleep_timeout_ms;
     bool lcc_enabled;
     const char *jmri_ip_address;
 } lever_system_config_t;

@@ -588,6 +588,15 @@
                             <option value="2">Alarm Mode (Accept & Warn)</option>
                         </select>
                     </div>
+                    <div>
+                        <label for="display-sleep-select">Display Sleep Timer</label>
+                        <select id="display-sleep-select" onchange="updateDisplaySleep(this.value)">
+                            <option value="0">Never Sleep</option>
+                            <option value="30000">30 Seconds</option>
+                            <option value="60000">1 Minute</option>
+                            <option value="300000">5 Minutes</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="grid-2-col" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
                     <div>
@@ -879,6 +888,10 @@
             const conflictSelect = document.getElementById('conflict-policy-select');
             if (conflictSelect) {
                 conflictSelect.value = configData.conflict_policy !== undefined ? configData.conflict_policy.toString() : "0";
+            }
+            const sleepSelect = document.getElementById('display-sleep-select');
+            if (sleepSelect) {
+                sleepSelect.value = configData.display_sleep_timeout_ms !== undefined ? configData.display_sleep_timeout_ms.toString() : "60000";
             }
             const globalLcc = document.getElementById('global-lcc-checkbox');
             if (globalLcc) {
@@ -1258,6 +1271,11 @@
 
         function updateConflictPolicy(val) {
             configData.conflict_policy = parseInt(val) || 0;
+            checkChanges();
+        }
+
+        function updateDisplaySleep(val) {
+            configData.display_sleep_timeout_ms = parseInt(val) || 0;
             checkChanges();
         }
 
