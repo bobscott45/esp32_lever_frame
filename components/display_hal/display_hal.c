@@ -68,7 +68,7 @@ esp_err_t display_hal_backlight_on(void) {
 esp_err_t display_hal_backlight_off(void) {
     return bsp_display_backlight_off();
 }
-#else
+#elif defined(CONFIG_HARDWARE_BOARD_WAVESHARE_S3)
 #include "bsp/board.h"
 
 esp_err_t display_hal_init(esp_lcd_panel_handle_t *panel_handle, esp_lcd_touch_handle_t *touch_handle) {
@@ -85,4 +85,6 @@ esp_err_t display_hal_backlight_on(void) {
 esp_err_t display_hal_backlight_off(void) {
     return waveshare_rgb_lcd_bl_off();
 }
+#else
+#error "No supported hardware board selected in Kconfig!"
 #endif

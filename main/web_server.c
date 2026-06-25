@@ -415,8 +415,8 @@ esp_err_t web_server_start(void) {
 
     const lever_system_config_t *curr_config = config_manager_get_current();
     const char *ap_password = (curr_config && curr_config->wifi_password && strlen(curr_config->wifi_password) >= 8) ? curr_config->wifi_password : "signalman";
-    const char *sta_ssid = (curr_config && curr_config->wifi_ssid) ? curr_config->wifi_ssid : "";
-    const char *sta_password = (curr_config && curr_config->wifi_station_password) ? curr_config->wifi_station_password : "";
+    const char *sta_ssid = (curr_config && curr_config->wifi_ssid && strlen(curr_config->wifi_ssid) > 0) ? curr_config->wifi_ssid : CONFIG_WIFI_DEFAULT_SSID;
+    const char *sta_password = (curr_config && curr_config->wifi_station_password && strlen(curr_config->wifi_station_password) > 0) ? curr_config->wifi_station_password : CONFIG_WIFI_DEFAULT_PASSWORD;
 
     wifi_config_t wifi_config_ap = {
         .ap = {

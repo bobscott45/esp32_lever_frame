@@ -68,8 +68,7 @@
 // Transport Selection -- exactly one must be defined
 // =============================================================================
 
-#define OPENLCB_COMPILE_CAN
-// #define OPENLCB_COMPILE_TCP
+#define OPENLCB_COMPILE_TCP
 
 // =============================================================================
 // Feature Flags -- uncomment to enable optional protocols

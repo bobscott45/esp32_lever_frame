@@ -1,0 +1,17 @@
+menu "WiFi Configuration"
+
+    config WIFI_DEFAULT_SSID
+        string "Default WiFi SSID (for development)"
+        default ""
+        help
+            If the device's NVS memory is wiped, it will attempt to connect to this SSID automatically,
+            bypassing the need to provision it via the WebUI on every re-flash. 
+            WARNING: Will be saved in plaintext in sdkconfig!
+
+    config WIFI_DEFAULT_PASSWORD
+        string "Default WiFi Password"
+        default ""
+        help
+            The password for the default WiFi SSID.
+
+endmenu

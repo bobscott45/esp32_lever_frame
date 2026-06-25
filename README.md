@@ -18,8 +18,9 @@ This project supports the following display modules:
 
 * **Wireless Operation**: Fully wireless connectivity utilizing the ESP32's built-in Wi-Fi, eliminating the need for complex physical wiring to your layout.
 
-* **OpenLCB / LCC Integration**: Comprehensive support for Layout Command Control protocols, handling two-way event parsing, state reporting, and dynamic lever state synchronization.
+* **OpenLCB / LCC Integration**: Comprehensive, thread-safe support for Layout Command Control protocols. The lever frame operates exclusively via **GridConnect TCP over Wi-Fi**, handling two-way event parsing, state reporting, and dynamic lever state synchronization without requiring a physical CAN bus connection to the display.
 * **Web Configuration Interface**: A built-in Wi-Fi and web server UI for easy configuration of LCC events, network settings, and device parameters.
+* **Kconfig Wi-Fi Fallback**: Optionally pre-configure your home Wi-Fi credentials via `idf.py menuconfig` for rapid development and automatic connection when NVS memory is wiped.
 * **State Persistence**: Non-Volatile Storage (NVS) is used to save and restore lever states, including manual lock collar states and startup modes, ensuring reliable operation across reboots.
 * **High-Performance Touch UI**: A fully custom-built virtual lever frame interface that forms the core of the application, featuring highly optimized memory buffering for smooth, tear-free operation, gesture controls, and a responsive informational drawer.
 * **Prototypical Interlocking Engine**: A C-based interlocking engine that bidirectionally models physical mechanical tappet locking, preventing deadlocks and supporting complex route dependencies like Facing Point Locks (FPLs) and conditional "OR" logic.
@@ -57,13 +58,16 @@ This project is built using the ESP-IDF framework (v6 compatible).
      idf.py -B build_s3_standard set-target esp32s3
      idf.py -B build_s3_standard menuconfig
      ```
-     *(Navigate to **Component config -> Hardware Display Selection** and select the S3 board).*
+     *(Navigate to **Hardware Display Selection** at the top level and select the S3 board).*
    * **For ESP32-P4:**
      ```bash
      idf.py -B build_p4 set-target esp32p4
      idf.py -B build_p4 menuconfig
      ```
-     *(Navigate to **Component config -> Hardware Display Selection** and select the P4 board).*
+     *(Navigate to **Hardware Display Selection** at the top level and select the P4 board).*
+     
+   *(Optional)* While in `menuconfig`, navigate to **WiFi Configuration** at the top level to enter default Wi-Fi credentials for rapid development.
+   
 4. Build the project:
    * **For ESP32-S3 (Standard):**
      ```bash

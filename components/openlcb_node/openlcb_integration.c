@@ -115,11 +115,6 @@ void openlcb_integration_init(void) {
     ESP_LOGI(TAG, "Initializing LCC Drivers...");
     lcc_drivers_initialize();
     
-#ifdef OPENLCB_COMPILE_CAN
-    // can_driver_initialize(); // Disabled physical CAN, only using GridConnect TCP
-    CanConfig_initialize(&local_can_config);
-#endif
-
     tcp_driver_initialize(); // Start GridConnect TCP Server
 
     OpenLcbConfig_initialize(&openlcb_config);
@@ -170,7 +165,10 @@ void openlcb_produce_event(event_id_t event_id) {
     if (!local_node) return;
     if (event_id == 0) return;
     
+    lcc_drivers_lock_shared_resources();
     OpenLcbApplication_send_event_pc_report(local_node, event_id);
+    lcc_drivers_unlock_shared_resources();
+    
     ESP_LOGD(TAG, "Sent PCER for EventID: 0x%016llX", (unsigned long long)event_id);
 }
 
