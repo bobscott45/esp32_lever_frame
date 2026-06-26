@@ -90,6 +90,10 @@ static void on_controller_state_changed(void* handler_args, esp_event_base_t bas
 
 static bool display_is_sleeping = false;
 
+#include "esp_wifi.h"
+
+static lv_obj_t *touch_shield = NULL;
+
 /**
  * @brief  Callback for the display sleep timer.
  *
@@ -106,6 +110,7 @@ static void display_sleep_timer_cb(lv_timer_t *timer)
         // Sleep disabled
         if (display_is_sleeping) {
             display_hal_backlight_on();
+            esp_wifi_start(); // Ensure Wi-Fi is back on
             display_is_sleeping = false;
         }
         return;
@@ -114,13 +119,38 @@ static void display_sleep_timer_cb(lv_timer_t *timer)
     uint32_t inactive_time = lv_disp_get_inactive_time(NULL);
     
     if (inactive_time > timeout_ms && !display_is_sleeping) {
-        ESP_LOGI(TAG, "Display inactive for %lu ms. Sleeping display.", (unsigned long)inactive_time);
+        ESP_LOGI(TAG, "Display inactive for %lu ms. Sleeping display and Wi-Fi.", (unsigned long)inactive_time);
+        
+        // Create an invisible shield on the top-most system layer to absorb the first touch.
+        touch_shield = lv_obj_create(lv_layer_sys());
+        lv_obj_set_size(touch_shield, LV_PCT(100), LV_PCT(100));
+        lv_obj_add_flag(touch_shield, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_set_style_bg_opa(touch_shield, LV_OPA_TRANSP, 0);
+        lv_obj_set_style_border_width(touch_shield, 0, 0);
+        
         display_hal_backlight_off();
+        
+        // PSEUDO-STAGE 3: Completely stop the Wi-Fi PHY to eliminate the 150mA base load.
+        // This guarantees the voltage regulator has enough capacity when the backlight turns on.
+        esp_wifi_stop();
+        
         display_is_sleeping = true;
     } else if (inactive_time < timeout_ms && display_is_sleeping) {
-        ESP_LOGI(TAG, "Activity detected. Waking display.");
+        ESP_LOGI(TAG, "Activity detected. Waking display and starting Wi-Fi.");
+        
         display_hal_backlight_on();
+        
+        // Remove the shield now that the screen is awake
+        if (touch_shield) {
+            lv_obj_del(touch_shield);
+            touch_shield = NULL;
+        }
+        
         display_is_sleeping = false;
+        
+        // Restart Wi-Fi AFTER the backlight inrush spike has settled.
+        // This will automatically trigger WIFI_EVENT_STA_START and reconnect.
+        esp_wifi_start(); 
     }
 }
 
