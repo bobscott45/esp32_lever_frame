@@ -15,3 +15,27 @@ menu "WiFi Configuration"
             The password for the default WiFi SSID.
 
 endmenu
+
+menu "OpenLCB Node Configuration"
+
+    config OPENLCB_NODE_ID
+        hex "OpenLCB Node ID (48-bit)"
+        default 0x05010101A604
+        help
+            The 48-bit (6 byte) globally unique Node ID for this device.
+            This value must be unique for every physical node on your layout.
+
+endmenu
+
+menu "Hardware Workarounds"
+
+    config HARDWARE_IGNORE_BROWNOUT_ON_WAKE
+        bool "Disable Brownout Detector during Backlight Wake"
+        default n
+        help
+            Temporarily disables the ESP32 Brownout Detector for 50ms when the 
+            display backlight turns on. This prevents the board from rebooting 
+            if the backlight inrush current momentarily drops the voltage.
+            Enable this if your board reboots when waking from sleep.
+
+endmenu

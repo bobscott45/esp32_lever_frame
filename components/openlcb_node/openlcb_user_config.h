@@ -59,7 +59,13 @@
 #ifndef __OPENLCB_USER_CONFIG__
 #define __OPENLCB_USER_CONFIG__
 
-#define NODE_ID    0x05010101A604
+#include "sdkconfig.h"
+
+#ifndef CONFIG_OPENLCB_NODE_ID
+    #define NODE_ID 0x05010101A604
+#else
+    #define NODE_ID CONFIG_OPENLCB_NODE_ID
+#endif
 
 #define DEFAULT_NODE_USER_NAME "LCC Lever Frame Node"
 #define DEFAULT_NODE_DESCRIPTION "Interactive ESP32-S3 Touch Screen Lever Frame"

@@ -449,6 +449,9 @@ esp_err_t web_server_start(void) {
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config_ap));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config_sta));
     ESP_ERROR_CHECK(esp_wifi_start());
+    
+    // Limit TX power to 8.5 dBm (approx 200mA) to prevent brownouts on weak 3.3V LDOs
+    esp_wifi_set_max_tx_power(34);
 
     ESP_LOGI(TAG, "Wi-Fi softAP 'Lever-Frame-Config' started successfully. Password: %s", ap_password);
     ESP_LOGI(TAG, "Wi-Fi STA connecting to '%s'...", sta_ssid);

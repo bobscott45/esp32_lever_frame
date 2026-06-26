@@ -68,6 +68,8 @@ This project is built using the ESP-IDF framework (v6 compatible).
      
    *(Optional)* While in `menuconfig`, navigate to **WiFi Configuration** at the top level to enter default Wi-Fi credentials for rapid development.
    
+   *(Optional)* Navigate to **OpenLCB Node Configuration** to assign a unique 48-bit Node ID for this specific screen. This ensures each screen has a unique identity on the OpenLCB network.
+
 4. Build the project:
    * **For ESP32-S3 (Standard):**
      ```bash
