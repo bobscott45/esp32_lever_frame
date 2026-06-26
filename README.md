@@ -10,9 +10,12 @@ An ESP32-based application specifically designed for the **Waveshare ESP32-S3-To
 This project supports the following display modules:
 * **Waveshare ESP32-S3-Touch-LCD-4.3** (Part Number/SKU: **25948**).
   * **IMPORTANT:** For the S3, this project is specifically designed for the *original* standard version of this display. It is **NOT** compatible with the "B" (ESP32-S3-Touch-LCD-4.3B) or "C" (ESP32-S3-Touch-LCD-4.3C) variants due to differences in their hardware and interface configurations.
-  * **Note:** The S3 works well and has excellent battery life.
+  * **⚠️ Hardware Power Flaw:** Out of the box, this specific board has an undersized 3.3V LDO voltage regulator that suffers from thermal derating. When waking the screen from sleep, the combined load of the ESP32, Wi-Fi radio, and backlight inrush current will cause the voltage to droop and crash the ESP32 in a boot loop.
+    * **Software Workaround (Pseudo-Stage 3):** The `power-management-dev` branch includes a hack to completely drop the Wi-Fi connection prior to sleeping to give the voltage regulator enough headroom to survive the wake cycle. This introduces a 2-second Wi-Fi reconnect delay upon waking.
+    * **Hardware Fix (Recommended):** As detailed in Pieter van Ginkel's Medium article on these boards, you can permanently fix this brownout issue by soldering a **470uF bulk capacitor** across the GND and VOUT pins of the 3.3V LDO. This acts as an energy buffer for the backlight inrush, eliminating the crash and allowing for True Deep Sleep and instant-wake without dropping Wi-Fi.
+  * **⚠️ Hardware Dimming Flaw:** The backlight enable pin (MP3302 EN) is wired through a digital CH422G I/O expander rather than a direct PWM-capable GPIO. Therefore, **screen dimming and soft-starting are physically impossible** on this board.
 * **Waveshare ESP32-P4-WIFI6-Touch-LCD-4.3** display module.
-  * **Note:** The P4 offers a cleaner, snappier display with absolutely no UI tearing, but it comes at the cost of shorter battery life compared to the S3.
+  * **Note:** The P4 offers a cleaner, snappier display with absolutely no UI tearing, but it comes at the cost of shorter battery life compared to the S3. The P4 board does **not** suffer from the backlight dimming or brownout flaws of the S3.
 
 ## Key Features
 
