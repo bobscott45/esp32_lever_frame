@@ -42,6 +42,23 @@
 static const char *TAG = "main";
 lv_obj_t *system_tabview = NULL;
 
+extern int active_tcp_socket;
+#define MAX_PENDING_EVENTS 32
+static event_id_t pending_events[MAX_PENDING_EVENTS];
+static int pending_events_count = 0;
+
+static void openlcb_queue_timer_cb(lv_timer_t *timer) {
+    if (active_tcp_socket >= 0 && pending_events_count > 0) {
+        ESP_LOGI(TAG, "Wi-Fi TCP connected! Draining %d queued OpenLCB events...", pending_events_count);
+        for (int i = 0; i < pending_events_count; i++) {
+            openlcb_produce_event(pending_events[i]);
+            // Give the TCP stack a tiny breathing room between packets
+            vTaskDelay(pdMS_TO_TICKS(10)); 
+        }
+        pending_events_count = 0;
+    }
+}
+
 /**
  * @brief  Handle lever state change events.
  *
@@ -79,7 +96,16 @@ static void on_controller_state_changed(void* handler_args, esp_event_base_t bas
                     if (event_str && strlen(event_str) > 0) {
                         event_id_t eid = lcc_parse_event_id(event_str);
                         if (eid != 0) {
-                            openlcb_produce_event(eid);
+                            if (active_tcp_socket >= 0) {
+                                openlcb_produce_event(eid);
+                            } else {
+                                if (pending_events_count < MAX_PENDING_EVENTS) {
+                                    pending_events[pending_events_count++] = eid;
+                                    ESP_LOGI(TAG, "Wi-Fi disconnected. Queued OpenLCB event.");
+                                } else {
+                                    ESP_LOGW(TAG, "OpenLCB event queue full! Event dropped.");
+                                }
+                            }
                         }
                     }
                 }
@@ -300,6 +326,9 @@ void app_main(void)
         
         lv_timer_t *sleep_timer = lv_timer_create(display_sleep_timer_cb, 500, NULL);
         lv_timer_set_repeat_count(sleep_timer, -1);
+        
+        lv_timer_t *queue_timer = lv_timer_create(openlcb_queue_timer_cb, 200, NULL);
+        lv_timer_set_repeat_count(queue_timer, -1);
         
         const lever_system_config_t *curr_config = config_manager_get_current();
         
