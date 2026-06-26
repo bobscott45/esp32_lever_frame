@@ -42,23 +42,6 @@
 static const char *TAG = "main";
 lv_obj_t *system_tabview = NULL;
 
-extern int active_tcp_socket;
-#define MAX_PENDING_EVENTS 32
-static event_id_t pending_events[MAX_PENDING_EVENTS];
-static int pending_events_count = 0;
-
-static void openlcb_queue_timer_cb(lv_timer_t *timer) {
-    if (active_tcp_socket >= 0 && pending_events_count > 0) {
-        ESP_LOGI(TAG, "Wi-Fi TCP connected! Draining %d queued OpenLCB events...", pending_events_count);
-        for (int i = 0; i < pending_events_count; i++) {
-            openlcb_produce_event(pending_events[i]);
-            // Give the TCP stack a tiny breathing room between packets
-            vTaskDelay(pdMS_TO_TICKS(10)); 
-        }
-        pending_events_count = 0;
-    }
-}
-
 /**
  * @brief  Handle lever state change events.
  *
@@ -96,16 +79,7 @@ static void on_controller_state_changed(void* handler_args, esp_event_base_t bas
                     if (event_str && strlen(event_str) > 0) {
                         event_id_t eid = lcc_parse_event_id(event_str);
                         if (eid != 0) {
-                            if (active_tcp_socket >= 0) {
-                                openlcb_produce_event(eid);
-                            } else {
-                                if (pending_events_count < MAX_PENDING_EVENTS) {
-                                    pending_events[pending_events_count++] = eid;
-                                    ESP_LOGI(TAG, "Wi-Fi disconnected. Queued OpenLCB event.");
-                                } else {
-                                    ESP_LOGW(TAG, "OpenLCB event queue full! Event dropped.");
-                                }
-                            }
+                            openlcb_produce_event(eid);
                         }
                     }
                 }
@@ -115,8 +89,6 @@ static void on_controller_state_changed(void* handler_args, esp_event_base_t bas
 }
 
 static bool display_is_sleeping = false;
-
-#include "esp_wifi.h"
 
 static lv_obj_t *touch_shield = NULL;
 
@@ -136,7 +108,6 @@ static void display_sleep_timer_cb(lv_timer_t *timer)
         // Sleep disabled
         if (display_is_sleeping) {
             display_hal_backlight_on();
-            esp_wifi_start(); // Ensure Wi-Fi is back on
             display_is_sleeping = false;
         }
         return;
@@ -145,7 +116,7 @@ static void display_sleep_timer_cb(lv_timer_t *timer)
     uint32_t inactive_time = lv_disp_get_inactive_time(NULL);
     
     if (inactive_time > timeout_ms && !display_is_sleeping) {
-        ESP_LOGI(TAG, "Display inactive for %lu ms. Sleeping display and Wi-Fi.", (unsigned long)inactive_time);
+        ESP_LOGI(TAG, "Display inactive for %lu ms. Sleeping display.", (unsigned long)inactive_time);
         
         // Create an invisible shield on the top-most system layer to absorb the first touch.
         touch_shield = lv_obj_create(lv_layer_sys());
@@ -155,14 +126,9 @@ static void display_sleep_timer_cb(lv_timer_t *timer)
         lv_obj_set_style_border_width(touch_shield, 0, 0);
         
         display_hal_backlight_off();
-        
-        // PSEUDO-STAGE 3: Completely stop the Wi-Fi PHY to eliminate the 150mA base load.
-        // This guarantees the voltage regulator has enough capacity when the backlight turns on.
-        esp_wifi_stop();
-        
         display_is_sleeping = true;
     } else if (inactive_time < timeout_ms && display_is_sleeping) {
-        ESP_LOGI(TAG, "Activity detected. Waking display and starting Wi-Fi.");
+        ESP_LOGI(TAG, "Activity detected. Waking display.");
         
         display_hal_backlight_on();
         
@@ -173,14 +139,6 @@ static void display_sleep_timer_cb(lv_timer_t *timer)
         }
         
         display_is_sleeping = false;
-        
-        // CRITICAL: We MUST wait for the backlight inrush capacitor to fully charge 
-        // before turning the Wi-Fi PHY back on. If we don't, they will overlap and 
-        // crash the voltage regulator. 
-        vTaskDelay(pdMS_TO_TICKS(250));
-        
-        // Restart Wi-Fi. This will trigger WIFI_EVENT_STA_START and reconnect.
-        esp_wifi_start(); 
     }
 }
 
@@ -330,9 +288,6 @@ void app_main(void)
         
         lv_timer_t *sleep_timer = lv_timer_create(display_sleep_timer_cb, 500, NULL);
         lv_timer_set_repeat_count(sleep_timer, -1);
-        
-        lv_timer_t *queue_timer = lv_timer_create(openlcb_queue_timer_cb, 200, NULL);
-        lv_timer_set_repeat_count(queue_timer, -1);
         
         const lever_system_config_t *curr_config = config_manager_get_current();
         
