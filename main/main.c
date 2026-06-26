@@ -174,8 +174,12 @@ static void display_sleep_timer_cb(lv_timer_t *timer)
         
         display_is_sleeping = false;
         
-        // Restart Wi-Fi AFTER the backlight inrush spike has settled.
-        // This will automatically trigger WIFI_EVENT_STA_START and reconnect.
+        // CRITICAL: We MUST wait for the backlight inrush capacitor to fully charge 
+        // before turning the Wi-Fi PHY back on. If we don't, they will overlap and 
+        // crash the voltage regulator. 
+        vTaskDelay(pdMS_TO_TICKS(250));
+        
+        // Restart Wi-Fi. This will trigger WIFI_EVENT_STA_START and reconnect.
         esp_wifi_start(); 
     }
 }
