@@ -107,7 +107,7 @@ static void display_sleep_timer_cb(lv_timer_t *timer)
     if (timeout_ms <= 0) {
         // Sleep disabled
         if (display_is_sleeping) {
-            display_hal_backlight_on();
+            display_hal_fade_backlight(true);
             display_is_sleeping = false;
         }
         return;
@@ -125,12 +125,12 @@ static void display_sleep_timer_cb(lv_timer_t *timer)
         lv_obj_set_style_bg_opa(touch_shield, LV_OPA_TRANSP, 0);
         lv_obj_set_style_border_width(touch_shield, 0, 0);
         
-        display_hal_backlight_off();
+        display_hal_fade_backlight(false);
         display_is_sleeping = true;
     } else if (inactive_time < timeout_ms && display_is_sleeping) {
         ESP_LOGI(TAG, "Activity detected. Waking display.");
         
-        display_hal_backlight_on();
+        display_hal_fade_backlight(true);
         
         // Remove the shield now that the screen is awake
         if (touch_shield) {
@@ -163,7 +163,7 @@ static void rebuild_ui_timer_cb(lv_timer_t *timer)
         
         // Turn off backlight and delete old UI to prevent tearing
         ESP_LOGI(TAG, "Config update: Turning off backlight and clearing UI");
-        display_hal_backlight_off();
+        display_hal_fade_backlight(false);
         
         info_overlay_close_immediate();
         lever_close_all_drawers();
@@ -190,7 +190,7 @@ static void rebuild_ui_timer_cb(lv_timer_t *timer)
     } else {
         // Turn backlight back on
         ESP_LOGI(TAG, "Config update: Restoring backlight");
-        display_hal_backlight_on();
+        display_hal_fade_backlight(true);
         
         state = 0;
     }
@@ -259,7 +259,7 @@ void app_main(void)
     
     // Delay to allow RGB panel sync signals to stabilize before enabling backlight.
     vTaskDelay(pdMS_TO_TICKS(1500));
-    ESP_ERROR_CHECK(display_hal_backlight_on());
+    ESP_ERROR_CHECK(display_hal_fade_backlight(true));
     
     // Invalidate screen to prevent initial frame corruption.
     if (ui_port_lock(-1)) {

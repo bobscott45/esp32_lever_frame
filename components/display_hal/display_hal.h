@@ -76,6 +76,21 @@ esp_err_t display_hal_backlight_on(void);
  */
 esp_err_t display_hal_backlight_off(void);
 
+/**
+ * @brief  Fade the display backlight on or off.
+ *
+ * Smoothly transitions the backlight brightness. On hardware that does not 
+ * support PWM dimming (e.g. S3), this function instantly snaps the brightness
+ * on or off.
+ * 
+ * @param[in] on  True to fade on, false to fade off.
+ * 
+ * @return 
+ *   - ESP_OK on success
+ *   - ESP_FAIL on general failure
+ */
+esp_err_t display_hal_fade_backlight(bool on);
+
 #ifdef __cplusplus
 }
 #endif

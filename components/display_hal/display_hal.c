@@ -26,6 +26,8 @@
 #include "display_hal.h"
 #include "sdkconfig.h"
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 #ifdef CONFIG_HARDWARE_BOARD_WAVESHARE_P4
 #include "bsp/esp32_p4_wifi6_touch_lcd_4_3.h"
@@ -68,6 +70,21 @@ esp_err_t display_hal_backlight_on(void) {
 esp_err_t display_hal_backlight_off(void) {
     return bsp_display_backlight_off();
 }
+esp_err_t display_hal_fade_backlight(bool on) {
+    if (on) {
+        for (int i = 0; i <= 100; i += 5) {
+            bsp_display_brightness_set(i);
+            vTaskDelay(pdMS_TO_TICKS(10));
+        }
+        return bsp_display_brightness_set(100);
+    } else {
+        for (int i = 100; i >= 0; i -= 5) {
+            bsp_display_brightness_set(i);
+            vTaskDelay(pdMS_TO_TICKS(10));
+        }
+        return bsp_display_brightness_set(0);
+    }
+}
 #elif defined(CONFIG_HARDWARE_BOARD_WAVESHARE_S3)
 #include "bsp/board.h"
 
@@ -84,6 +101,15 @@ esp_err_t display_hal_backlight_on(void) {
 
 esp_err_t display_hal_backlight_off(void) {
     return waveshare_rgb_lcd_bl_off();
+}
+
+esp_err_t display_hal_fade_backlight(bool on) {
+    // S3 hardware cannot dim, so snap instantly
+    if (on) {
+        return display_hal_backlight_on();
+    } else {
+        return display_hal_backlight_off();
+    }
 }
 #else
 #error "No supported hardware board selected in Kconfig!"
