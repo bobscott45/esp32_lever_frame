@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [1.7.1] - 2026-06-27
+
+### Fixed
+- Fixed a critical crash (LoadProhibited Guru Meditation) that occurred whenever JMRI or LccPro sent any packet to the node after connecting. Root cause was a transport mode mismatch introduced in v1.6.0: `openlcb_user_config.h` was set to `OPENLCB_COMPILE_TCP` while the network layer runs a GridConnect (CAN-over-TCP) server, leaving `CanRxStatemachine._interface` permanently NULL. Restored `OPENLCB_COMPILE_CAN` as the correct transport for GridConnect/JMRI connectivity.
+- Restored `CanConfig_initialize()` call in `openlcb_integration_init()` which is required to wire up the CAN receive state machine before `OpenLcbConfig_initialize()`.
+- Upgraded the OpenLCB shared-resource mutex from a standard to a recursive mutex to prevent deadlocks when memory-space read/write callbacks are invoked from within the locked run loop.
+- Added mutex guards around `OpenLcbConfig_run()`, `OpenLcbConfig_100ms_timer_tick()`, and `CanRxStatemachine_incoming_can_driver_callback()` to prevent race conditions between the OpenLCB task and the TCP receive task.
+- Increased `openlcb_task` and `tcp_task` stack sizes from 4 KB to 16 KB to accommodate deep call chains through lwIP during JMRI Refresh.
+- Changed `twai_transmit` timeout to non-blocking (0 ticks) so a disconnected physical CAN bus never stalls the Wi-Fi/TCP path.
+- Disabled Wi-Fi power save (`WIFI_PS_NONE`) to ensure reliable reception of JMRI multicast discovery packets.
+
 ## [1.7.0] - 2026-06-26
 
 ### Added
