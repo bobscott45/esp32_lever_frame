@@ -450,7 +450,10 @@ esp_err_t web_server_start(void) {
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config_sta));
     ESP_ERROR_CHECK(esp_wifi_start());
     
-    // Limit TX power to minimum (2 dBm) to absolutely minimize peak current for testing
+    // Disable power save to ensure reliable reception of JMRI multicast discovery packets
+    esp_wifi_set_ps(WIFI_PS_NONE);
+    
+    // Limit TX power to minimum (2 dBm) to absolutely minimize peak current and prevent hard brownouts
     esp_wifi_set_max_tx_power(8);
 
     ESP_LOGI(TAG, "Wi-Fi softAP 'Lever-Frame-Config' started successfully. Password: %s", ap_password);

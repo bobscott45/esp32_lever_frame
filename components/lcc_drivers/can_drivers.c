@@ -28,6 +28,7 @@
 
     #include <string.h>
     #include "can_drivers.h"
+    #include "lcc_drivers.h"
     #include "esp_log.h"
     #include "driver/gpio.h"
 #pragma GCC diagnostic push
@@ -74,7 +75,9 @@ static void can_rx_task(void *pvParameters) {
                     }
 
                     // 1. Forward to the local OpenLCB stack
+                    lcc_drivers_lock_shared_resources();
                     CanRxStatemachine_incoming_can_driver_callback(&can_msg);
+                    lcc_drivers_unlock_shared_resources();
 
                     // 2. Bridge to the TCP client if one is connected
                     if (active_tcp_socket >= 0) {
@@ -143,7 +146,7 @@ static void can_rx_task(void *pvParameters) {
             tx_msg.data[i] = can_msg->payload[i];
         }
 
-        esp_err_t err = twai_transmit(&tx_msg, pdMS_TO_TICKS(50));
+        esp_err_t err = twai_transmit(&tx_msg, 0);
         return (err == ESP_OK);
     }
 
@@ -169,15 +172,22 @@ bool can_driver_transmit(can_msg_t *can_msg) {
     }
 
 
-bool can_driver_is_clear(void) {
-        // If the physical CAN driver is disabled, we are in TCP-only mode.
-        // Return true if TCP is active so the library is allowed to send frames.
+    bool can_driver_is_clear(void) {
         if (!is_driver_connected) {
             return (active_tcp_socket >= 0);
         }
 
         twai_status_info_t status;
         twai_get_status_info(&status);
+
+        // If TCP is connected, we ALWAYS consider the channel "clear" for the sake 
+        // of the OpenLCB stack, so Wi-Fi traffic isn't blocked by a broken CAN bus.
+        if (active_tcp_socket >= 0) {
+            if (status.state == TWAI_STATE_BUS_OFF) {
+                twai_initiate_recovery();
+            }
+            return true;
+        }
 
         if (status.state == TWAI_STATE_BUS_OFF) {
             ESP_LOGW(TAG, "CAN Bus off. Recovering...");

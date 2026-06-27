@@ -105,20 +105,20 @@ void init_node_storage(void) {
 
 void lcc_drivers_initialize(void) {
     init_node_storage();
-    openlcb_mutex = xSemaphoreCreateMutex();
+    openlcb_mutex = xSemaphoreCreateRecursiveMutex();
 }
 
 
 void lcc_drivers_lock_shared_resources(void) {
     if (openlcb_mutex != NULL) {
-        xSemaphoreTake(openlcb_mutex, portMAX_DELAY);
+        xSemaphoreTakeRecursive(openlcb_mutex, portMAX_DELAY);
     }
 }
 
 
 void lcc_drivers_unlock_shared_resources(void) {
     if (openlcb_mutex != NULL) {
-        xSemaphoreGive(openlcb_mutex);
+        xSemaphoreGiveRecursive(openlcb_mutex);
     }
 }
 

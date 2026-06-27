@@ -28,6 +28,7 @@
 #include "freertos/task.h"
 #include "esp_log.h"
 #include "esp_wifi.h"
+#include "lcc_drivers.h"
 #include "esp_wifi_default.h"
 #include "nvs_flash.h"
 #include "drivers/canbus/can_rx_statemachine.h"
@@ -146,7 +147,9 @@ static void tcp_task(void *pvParameters) {
                     if (valid) {
                         OpenLcbGridConnect_to_can_msg(&gc_buffer, &can_msg);
                         can_driver_transmit_physical(&can_msg);
+                        lcc_drivers_lock_shared_resources();
                         CanRxStatemachine_incoming_can_driver_callback(&can_msg);
+                        lcc_drivers_unlock_shared_resources();
                     }
                 }
             }
@@ -170,5 +173,5 @@ void tcp_driver_initialize(void) {
     ESP_LOGI(TAG, "Initializing TCP/IP driver");
     
     // Start the raw TCP task instead of start_http_server(). It will wait for WiFi internally.
-    xTaskCreatePinnedToCore(tcp_task, "openlcb_tcp", 4096, NULL, 5, NULL, 0);
+    xTaskCreatePinnedToCore(tcp_task, "openlcb_task", 16384, NULL, 5, NULL, 0);
 }

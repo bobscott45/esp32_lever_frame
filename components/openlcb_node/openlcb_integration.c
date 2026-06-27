@@ -93,12 +93,17 @@ static const can_config_t local_can_config = {
 static void openlcb_task(void *pvParameters) {
     int ticks = 0;
     while(1) {
+        lcc_drivers_lock_shared_resources();
         OpenLcbConfig_run();
+        lcc_drivers_unlock_shared_resources();
+        
         vTaskDelay(pdMS_TO_TICKS(10));
         ticks++;
         if (ticks >= 10) {
             ticks = 0;
+            lcc_drivers_lock_shared_resources();
             OpenLcbConfig_100ms_timer_tick();
+            lcc_drivers_unlock_shared_resources();
         }
     }
 }
@@ -115,6 +120,11 @@ void openlcb_integration_init(void) {
     ESP_LOGI(TAG, "Initializing LCC Drivers...");
     lcc_drivers_initialize();
     
+    // CanConfig_initialize MUST be called before OpenLcbConfig_initialize even in TCP-only mode.
+    // It wires up the internal _interface pointer in CanRxStatemachine. Without this call,
+    // _interface is NULL and ANY incoming TCP/CAN packet crashes with a LoadProhibited fault.
+    CanConfig_initialize(&local_can_config);
+
     tcp_driver_initialize(); // Start GridConnect TCP Server
 
     OpenLcbConfig_initialize(&openlcb_config);
@@ -158,7 +168,7 @@ void openlcb_integration_init(void) {
         ESP_LOGE(TAG, "Failed to create OpenLCB Node!");
     }
     
-    xTaskCreatePinnedToCore(openlcb_task, "openlcb_task", 4096, NULL, 5, NULL, 0);
+    xTaskCreatePinnedToCore(openlcb_task, "openlcb_task", 16384, NULL, 5, NULL, 0);
 }
 
 void openlcb_produce_event(event_id_t event_id) {
